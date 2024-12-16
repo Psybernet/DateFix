@@ -80,6 +80,7 @@ def extract_date(filename):
     return None, None
 
 def scan_directory(directory):
+    """Scan directory for files and directories with dates in their names."""
     changes = {}
     
     for item in os.listdir(directory):
@@ -91,6 +92,55 @@ def scan_directory(directory):
             changes[path] = os.path.join(directory, new_name)
     
     return changes
+
+def get_next_version_name(path):
+    """Generate a new version name for files that already exist."""
+    directory = os.path.dirname(path)
+    filename = os.path.basename(path)
+    name, ext = os.path.splitext(filename)
+    
+    version = 2
+    while os.path.exists(path):
+        new_name = f"{name}_{version}{ext}"
+        path = os.path.join(directory, new_name)
+        version += 1
+    
+    return path
+
+def handle_rename(old_path, new_path):
+    """Handle the renaming process with conflict resolution."""
+    if os.path.exists(new_path):
+        print(f"\nTarget already exists: {os.path.basename(new_path)}")
+        while True:
+            choice = input("Would you like to:\n"
+                         "1. Keep original name\n"
+                         "2. Add version number\n"
+                         "Choose (1 or 2): ").strip()
+            
+            if choice == '1':
+                print(f"Keeping original name: {os.path.basename(old_path)}")
+                return False
+            elif choice == '2':
+                versioned_path = get_next_version_name(new_path)
+                try:
+                    os.rename(old_path, versioned_path)
+                    print(f"Renamed: {os.path.basename(old_path)} -> "
+                          f"{os.path.basename(versioned_path)}")
+                    return True
+                except Exception as e:
+                    print(f"Error renaming {old_path}: {e}")
+                    return False
+            else:
+                print("Invalid choice. Please enter 1 or 2.")
+    else:
+        try:
+            os.rename(old_path, new_path)
+            print(f"Renamed: {os.path.basename(old_path)} -> "
+                  f"{os.path.basename(new_path)}")
+            return True
+        except Exception as e:
+            print(f"Error renaming {old_path}: {e}")
+            return False
 
 def main():
     # Get directory from user
@@ -117,13 +167,12 @@ def main():
     
     if confirm == 'y':
         # Apply changes
+        success_count = 0
         for old_path, new_path in changes.items():
-            try:
-                os.rename(old_path, new_path)
-                print(f"Renamed: {os.path.basename(old_path)} -> {os.path.basename(new_path)}")
-            except Exception as e:
-                print(f"Error renaming {old_path}: {e}")
-        print("\nAll changes applied successfully!")
+            if handle_rename(old_path, new_path):
+                success_count += 1
+        
+        print(f"\nCompleted! Successfully renamed {success_count} out of {len(changes)} items.")
     else:
         print("\nNo changes were made.")
 
