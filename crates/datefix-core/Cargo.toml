@@ -1,0 +1,16 @@
+[package]
+name = "datefix-core"
+description = "Finds dates in file names and rewrites them as YYYY-MM-DD"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+fancy-regex = "0.14"
+chrono = { version = "0.4", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"

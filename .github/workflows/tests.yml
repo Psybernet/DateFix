@@ -1,5 +1,5 @@
-# Runs the tests on Windows and Linux whenever code is pushed
-# or a pull request is opened.
+# Runs the tests on Windows and Linux whenever code is pushed or a pull
+# request is opened, and makes sure the desktop app still compiles on Windows.
 name: Tests
 
 on:
@@ -13,17 +13,25 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python: ["3.10", "3.13"]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          python-version: ${{ matrix.python }}
+          components: clippy, rustfmt
 
-      - name: Install pytest
-        run: python -m pip install pytest
+      - uses: Swatinem/rust-cache@v2
 
-      - name: Run tests
-        run: python -m pytest -v
+      - name: Check formatting
+        run: cargo fmt --all --check
+
+      - name: Run tests (core and command-line tool)
+        run: cargo test -p datefix-core -p datefix-cli
+
+      - name: Lint
+        run: cargo clippy -p datefix-core -p datefix-cli -- -D warnings
+
+      - name: Check the desktop app compiles
+        if: runner.os == 'Windows'
+        run: cargo clippy -p datefix-app -- -D warnings

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DateFix</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+  <header class="titlebar" data-tauri-drag-region>
+    <div class="brand" data-tauri-drag-region>
+      <img src="icon.png" alt="" width="22" height="22">
+      <span data-tauri-drag-region>DateFix</span>
+      <span class="pill" data-tauri-drag-region>2.0</span>
+    </div>
+    <div class="window-buttons">
+      <button id="win-min" title="Minimise" aria-label="Minimise"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
+      <button id="win-max" title="Maximise" aria-label="Maximise"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1.2"/></svg></button>
+      <button id="win-close" class="close" title="Close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="side">
+      <section class="card">
+        <h2>Folder</h2>
+        <button id="dropzone" class="dropzone" type="button">
+          <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M6 14a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/>
+            <path d="M24 21v11M19 27l5 5 5-5"/>
+          </svg>
+          <strong>Drop a folder here</strong>
+          <span>or click to browse <kbd>Ctrl</kbd> <kbd>O</kbd></span>
+        </button>
+        <div id="folder-chip" class="folder-chip" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          <span id="folder-path"></span>
+          <button id="rescan" class="icon-btn" title="Scan again" aria-label="Scan again">
+            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Options</h2>
+        <label class="switch">
+          <input type="checkbox" id="opt-recursive">
+          <span class="track"><span class="thumb"></span></span>
+          <span class="label">Include subfolders</span>
+        </label>
+        <label class="switch">
+          <input type="checkbox" id="opt-month-first">
+          <span class="track"><span class="thumb"></span></span>
+          <span class="label">US date order <small>05-11-2023 = 11 May</small></span>
+        </label>
+        <div class="field">
+          <span class="field-label">If the new name is taken</span>
+          <div class="segmented" role="radiogroup" aria-label="If the new name is taken">
+            <button type="button" role="radio" data-clash="number" aria-checked="true">Add a number</button>
+            <button type="button" role="radio" data-clash="skip" aria-checked="false">Skip it</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card formats">
+        <h2>Dates it understands</h2>
+        <ul>
+          <li><code>05.11.2023</code><code>2023_11_05</code></li>
+          <li><code>11 November 2022</code><code>11Nov23</code></li>
+          <li><code>Nov 22, 2022</code><code>20231105</code></li>
+        </ul>
+        <p>All become <code class="iso">2023-11-05</code></p>
+      </section>
+    </aside>
+
+    <section class="card preview">
+      <div class="preview-head">
+        <div>
+          <h2>Preview</h2>
+          <p id="summary" class="muted">Choose a folder to see what would change.</p>
+        </div>
+        <div class="preview-tools">
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
+            <input id="filter" type="search" placeholder="Filter" aria-label="Filter names" disabled>
+          </div>
+          <label class="check select-all" title="Select all">
+            <input type="checkbox" id="select-all" disabled>
+            <span class="box"></span>
+            <span>All</span>
+          </label>
+        </div>
+      </div>
+
+      <div id="list" class="list" role="list">
+        <div class="empty" id="empty">
+          <div class="empty-art" aria-hidden="true">
+            <span class="ghost-row"></span><span class="ghost-row"></span><span class="ghost-row"></span>
+          </div>
+          <p><strong>Nothing to show yet</strong><br>Drop a folder anywhere on this window.</p>
+        </div>
+      </div>
+
+      <footer class="actions">
+        <button id="undo" class="btn ghost" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
+          <span id="undo-label">Undo last rename</span>
+        </button>
+        <button id="apply" class="btn primary" disabled>
+          <span id="apply-label">Rename</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </footer>
+    </section>
+  </main>
+
+  <div id="drop-overlay" class="drop-overlay" hidden>
+    <div><strong>Drop to scan this folder</strong></div>
+  </div>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <script src="main.js"></script>
+</body>
+</html>
