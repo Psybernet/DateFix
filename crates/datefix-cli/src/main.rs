@@ -1,7 +1,9 @@
 //! datefix: the command-line version of DateFix.
 
 use clap::Parser;
-use datefix_core::{plan, rename_one, Journal, OnClash, Outcome};
+use datefix_core::{
+    data_dir_next_to_exe, plan, rename_one, Journal, OnClash, Outcome, DATA_FOLDER, UNDO_FILE,
+};
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
@@ -43,8 +45,12 @@ fn file_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
+/// Undo history lives in "DateFix data" next to datefix.exe, or in the
+/// temp folder if that folder can't be written to.
 fn journal_path() -> PathBuf {
-    std::env::temp_dir().join("datefix-cli-undo.json")
+    data_dir_next_to_exe()
+        .unwrap_or_else(|| std::env::temp_dir().join(DATA_FOLDER))
+        .join(UNDO_FILE)
 }
 
 fn report(outcomes: &[Outcome]) {

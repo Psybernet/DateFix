@@ -20,6 +20,8 @@ Messy dates in file names make files hard to sort. DateFix finds the date in eac
 
 Get **`DateFix-vX.Y.Z-setup.exe`** from the [latest release](https://github.com/Psybernet/DateFix/releases/latest) and run it, or use **`DateFix-vX.Y.Z-portable.exe`** to run it without installing. It works on Windows 10 and 11.
 
+Everything DateFix saves, such as your undo history, goes in a **`DateFix data`** folder next to the program, never in hidden folders elsewhere. Uninstalling removes it too. For the portable version, just delete the `.exe` and its `DateFix data` folder.
+
 The installer isn't code-signed, so Windows may say it's from an unknown publisher. Click **More info → Run anyway**.
 
 ## How to use it
@@ -28,7 +30,7 @@ The installer isn't code-signed, so Windows may say it's from an unknown publish
 2. **Check the preview.** The old date is shown in red and the new one in green. Untick anything you want to leave alone.
 3. Click **Rename**.
 
-Changed your mind? **Undo last rename** puts every name back, even after you've closed and reopened the app (<kbd>Ctrl</kbd>+<kbd>Z</kbd>).
+Changed your mind? **Undo last rename** puts every name back, even after you've closed and reopened the app (<kbd>Ctrl</kbd>+<kbd>Z</kbd>). The undo history is kept in the `DateFix data` folder next to the program.
 
 **Options**
 - **Include subfolders** also fixes names inside folders within the folder.
@@ -89,6 +91,8 @@ cargo run -p datefix-cli -- "D:\Scans" -n   # try the command-line tool
 ```
 
 Open `ui/index.html` in a browser to work on the interface with demo data.
+
+See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
 **Releasing:** set the new version in `Cargo.toml` and `src-tauri/tauri.conf.json`, commit, then `git tag v2.1.0` and `git push origin v2.1.0`.
 
