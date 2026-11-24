@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""date_fix: rename files and folders so the dates in their names read YYYY-MM-DD.
+"""DateFix: rename files and folders so the dates in their names read YYYY-MM-DD.
 
 Examples of names it fixes:
     "11 November 2022 notes.txt"  -> "2022-11-11 notes.txt"
