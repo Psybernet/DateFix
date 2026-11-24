@@ -15,7 +15,7 @@ It shows every change and asks before renaming anything.
 
 ## Requirements
 
-Python 3.9 or newer. No extra packages.
+Python 3.10 or newer. No extra packages.
 
 ## Usage
 
