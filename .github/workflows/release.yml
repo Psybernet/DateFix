@@ -54,6 +54,7 @@ jobs:
           mkdir dist
           cp target/release/bundle/nsis/*.exe "dist/DateFix-${GITHUB_REF_NAME}-setup.exe"
           cp target/release/bundle/msi/*.msi "dist/DateFix-${GITHUB_REF_NAME}.msi"
+          cp target/release/DateFix.exe "dist/DateFix-${GITHUB_REF_NAME}-portable.exe"
           cp target/release/datefix.exe "dist/datefix-cli-${GITHUB_REF_NAME}.exe"
           ls -l dist
 
@@ -64,6 +65,7 @@ jobs:
           body: |
             **Download `DateFix-${{ github.ref_name }}-setup.exe`** and run it to install DateFix.
 
+            - `DateFix-${{ github.ref_name }}-portable.exe`: the app without installing, just double-click it
             - `DateFix-${{ github.ref_name }}.msi`: the same app as an MSI, for managed installs
             - `datefix-cli-${{ github.ref_name }}.exe`: the command-line version, no install needed
 

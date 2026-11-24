@@ -18,7 +18,7 @@ Messy dates in file names make files hard to sort. DateFix finds the date in eac
 
 ## Download
 
-Get **`DateFix-vX.Y.Z-setup.exe`** from the [latest release](https://github.com/Psybernet/DateFix/releases/latest) and run it. It works on Windows 10 and 11.
+Get **`DateFix-vX.Y.Z-setup.exe`** from the [latest release](https://github.com/Psybernet/DateFix/releases/latest) and run it, or use **`DateFix-vX.Y.Z-portable.exe`** to run it without installing. It works on Windows 10 and 11.
 
 The installer isn't code-signed, so Windows may say it's from an unknown publisher. Click **More info → Run anyway**.
 
