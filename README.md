@@ -54,7 +54,7 @@ Only the first date in a name is changed. Anything that isn't a real date, like 
 The release also includes **`datefix-cli.exe`**, which does the same from a terminal:
 
 ```text
-datefix [OPTIONS] [FOLDER]
+datefix-cli [OPTIONS] [FOLDER]
 
   -r, --recursive    Also fix names inside subfolders
   -m, --month-first  Read 05-11-2023 as 11 May (US style)

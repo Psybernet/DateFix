@@ -45,7 +45,7 @@ fn file_name(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// Undo history lives in "DateFix data" next to datefix.exe, or in the
+/// Undo history lives in "DateFix data" next to datefix-cli.exe, or in the
 /// temp folder if that folder can't be written to.
 fn journal_path() -> PathBuf {
     data_dir_next_to_exe()
@@ -144,7 +144,7 @@ fn main() -> ExitCode {
 
     if let Some(journal) = Journal::from_outcomes(&directory, &outcomes) {
         if journal.save(&journal_path()).is_ok() {
-            println!("\nChanged your mind? Run: datefix --undo");
+            println!("\nChanged your mind? Run: datefix-cli --undo");
         }
     }
     let done = outcomes.iter().filter(|o| o.is_renamed()).count();

@@ -650,7 +650,7 @@ dependencies = [
 
 [[package]]
 name = "datefix-app"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "datefix-core",
  "serde",
@@ -662,7 +662,7 @@ dependencies = [
 
 [[package]]
 name = "datefix-cli"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "clap",
  "datefix-core",
@@ -670,7 +670,7 @@ dependencies = [
 
 [[package]]
 name = "datefix-core"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "chrono",
  "fancy-regex",

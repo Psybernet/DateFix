@@ -1,10 +1,14 @@
 # Changelog
 
+## 2.1.1 (2026-11-25)
+
+- Fixed: the portable download was the command-line tool instead of the app. On Windows, `datefix.exe` and `DateFix.exe` count as the same file name, so the command-line build overwrote the app. The command-line tool is now called `datefix-cli.exe`.
+
 ## 2.1.0 (2026-11-24)
 
 - Everything DateFix saves (the undo history and the window's browser data) now lives in a **`DateFix data` folder next to the program**, for both the installed and portable versions. Nothing goes in hidden AppData folders, and uninstalling removes the folder too.
 - New **portable version**: `DateFix-v2.1.0-portable.exe` runs without installing.
-- The command-line tool keeps its undo history in the same `DateFix data` folder next to `datefix.exe`.
+- The command-line tool keeps its undo history in the same `DateFix data` folder next to the command-line tool.
 - The installer installs for the current user only (in `%LOCALAPPDATA%\DateFix`), so it never needs administrator rights.
 - The MSI download is gone: it installs into Program Files, where DateFix can't keep its data next to itself.
 
