@@ -82,6 +82,29 @@ screenshots without building the app.
 - `fs::rename` on Windows replaces an existing file, so always check
   `exists()` first (see `rename_one`).
 
+## Next up: features from Martin's V6 Python app
+
+Before the Rust rewrite, Martin had a PyQt version (V6, June 2026) that never
+reached GitHub. It has things 2.x is missing, so these come first:
+
+1. **Work out the day/month order when it's obvious.** `3.13.2024` can only be
+   13 March, but 2.x reads it day-first and skips it as invalid. When the
+   chosen order gives an invalid date and the other order is valid (one number
+   is over 12), use the valid one.
+2. **2-digit years in numeric dates**, e.g. `05-11-23`. V6 supported them. Be
+   careful about false positives such as version numbers (`1.2.23`): only accept
+   them with `-` or `.` separators and a real calendar date, and add tests.
+3. **"Include folders" option** (on by default), so you can rename only files.
+   It needs an option in the core `plan()`, the UI and a CLI flag.
+4. **Scan in the background with progress and Cancel.** Tauri runs sync
+   commands on the main thread, so a large recursive scan freezes the window.
+   Make `scan` async or run it on a thread, and send progress events.
+
+Martin's real test names (from his Test/Template folders) should all pass.
+Add them to `crates/datefix-core/tests/core.rs`: `10January  2024`,
+`12  January  - 2024`, `14.Jan-2024`, `22Jan2023`, `3.13.2024`, `Jan 11 2024`,
+`11December2024`, `Document Dec 11 2019.txt`, `1 Feb 2019 Work Doc.txt`.
+
 ## Ideas not done yet
 
 - Signing the installer, so Windows doesn't show "unknown publisher"
