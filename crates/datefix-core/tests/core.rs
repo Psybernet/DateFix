@@ -58,6 +58,136 @@ fn leaves_non_dates_alone() {
 }
 
 #[test]
+fn martins_test_names() {
+    let cases = [
+        ("10January  2024", "2024-01-10"),
+        ("12  January  - 2024", "2024-01-12"),
+        ("14.Jan-2024", "2024-01-14"),
+        ("22Jan2023", "2023-01-22"),
+        ("3.13.2024", "2024-03-13"),
+        ("Jan 11 2024", "2024-01-11"),
+        ("11December2024", "2024-12-11"),
+        ("Document Dec 11 2019.txt", "Document 2019-12-11.txt"),
+        ("1 Feb 2019 Work Doc.txt", "2019-02-01 Work Doc.txt"),
+    ];
+    for (name, expected) in cases {
+        assert_eq!(
+            new_name_for(name, false).as_deref(),
+            Some(expected),
+            "renaming {name:?}"
+        );
+    }
+}
+
+#[test]
+fn day_and_month_swap_when_only_one_order_is_real() {
+    // Day-first by default, but 13 can't be a month.
+    assert_eq!(extract_date("3.13.2024", false).unwrap().iso, "2024-03-13");
+    // US order asked for, but 25 can't be a month.
+    assert_eq!(extract_date("25-12-2023", true).unwrap().iso, "2023-12-25");
+    // Neither order is real: left alone.
+    assert_eq!(extract_date("31-02-2023", false), None);
+    assert_eq!(extract_date("13-13-2023", false), None);
+}
+
+#[test]
+fn two_digit_years_in_numeric_dates() {
+    let cases = [
+        ("scan 05-11-23.jpg", "scan 2023-11-05.jpg"),
+        ("05.11.23 notes", "2023-11-05 notes"),
+        ("5-11-23", "2023-11-05"),
+        ("31.12.99 party", "1999-12-31 party"),
+    ];
+    for (name, expected) in cases {
+        assert_eq!(
+            new_name_for(name, false).as_deref(),
+            Some(expected),
+            "renaming {name:?}"
+        );
+    }
+    assert_eq!(
+        new_name_for("05-11-23", true).as_deref(),
+        Some("2023-05-11")
+    );
+    // With a 2-digit year the order is never swapped: too easy to mistake
+    // for something else, such as a time (10-15-30).
+    assert_eq!(new_name_for("3-13-24", false), None);
+    assert_eq!(new_name_for("Screenshot 10-15-30.png", false), None);
+}
+
+#[test]
+fn version_numbers_are_not_dates() {
+    for name in [
+        "app 1.2.23.zip",
+        "Setup v1.2.2023.exe",
+        "Setup V05.11.23.exe",
+        "build 10.1.2.2023",
+        "lib 5.11.2023.1.dll",
+        "lib 05.11.23.4",
+        "31-02-23",
+        "notes 1-2-345",
+    ] {
+        assert_eq!(
+            new_name_for(name, false),
+            None,
+            "{name:?} should be left alone"
+        );
+    }
+}
+
+#[test]
+fn month_and_year_without_a_day_is_left_alone() {
+    // "2024" used to be read as day 20 of '24.
+    for name in [
+        "Report June 2024.pdf",
+        "Holiday photos March 2023",
+        "Budget Sept 2021.xlsx",
+    ] {
+        assert_eq!(
+            new_name_for(name, false),
+            None,
+            "{name:?} should be left alone"
+        );
+    }
+}
+
+#[test]
+fn a_failed_match_does_not_hide_a_real_date() {
+    assert_eq!(
+        new_name_for("Week 3 notes 14 March 2024.docx", false).as_deref(),
+        Some("Week 3 notes 2024-03-14.docx")
+    );
+    assert_eq!(
+        new_name_for("Market 22 2020 - 5 June 2023", false).as_deref(),
+        Some("Market 22 2020 - 2023-06-05")
+    );
+}
+
+#[test]
+fn the_date_is_replaced_where_it_was_found() {
+    // The same text appears earlier inside a longer number.
+    assert_eq!(
+        new_name_for("105-11-2023 then 05-11-2023.txt", false).as_deref(),
+        Some("105-11-2023 then 2023-11-05.txt")
+    );
+}
+
+#[test]
+fn the_first_date_in_the_name_wins() {
+    assert_eq!(
+        new_name_for("05-11-2023 copy 2024-01-01.txt", false).as_deref(),
+        Some("2023-11-05 copy 2024-01-01.txt")
+    );
+    // Already fine at the front: leave the name alone.
+    assert_eq!(new_name_for("2023-11-05 copy 05.11.2023.txt", false), None);
+    // A 4-digit year beats an earlier, less certain 2-digit one.
+    assert_eq!(
+        new_name_for("track 4 Mar 21 - 5 June 2023.mp3", false).as_deref(),
+        Some("track 4 Mar 21 - 2023-06-05.mp3")
+    );
+}
+
+#[test]
 fn month_first_reads_us_dates() {
     assert_eq!(extract_date("05-11-2023", false).unwrap().iso, "2023-11-05");
     assert_eq!(extract_date("05-11-2023", true).unwrap().iso, "2023-05-11");

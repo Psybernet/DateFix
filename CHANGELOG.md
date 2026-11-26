@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.2 (unreleased)
+
+- New: when only one day/month order makes a real date, DateFix uses it. `3.13.2024` becomes 13 March 2024 instead of being skipped.
+- New: 2-digit years in numeric dates, such as `05-11-23` and `05.11.23`. With dots, the day and month need two digits each, so version numbers like `1.2.23` are left alone.
+- Fixed: a month and year with no day, like `Report June 2024`, was read as 20 June 2024. It's now left alone.
+- Fixed: a number followed by a word could hide a real date, so `Week 3 notes 14 March 2024` became the wrong date.
+- Fixed: the new date could land in the wrong place when the same text appeared earlier in the name (`105-11-2023 then 05-11-2023`).
+- Fixed: version numbers like `v1.2.2023` and `10.1.2.2023` are no longer read as dates.
+- Changed: DateFix now fixes the first date in the name, as the README always said. Before, some date styles were tried before others, wherever they were in the name. A date with a 4-digit year still beats a 2-digit one.
+
 ## 2.1.1 (2026-11-25)
 
 - Fixed: the portable download was the command-line tool instead of the app. On Windows, `datefix.exe` and `DateFix.exe` count as the same file name, so the command-line build overwrote the app. The command-line tool is now called `datefix-cli.exe`.

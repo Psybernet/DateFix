@@ -42,12 +42,12 @@ Changed your mind? **Undo last rename** puts every name back, even after you've 
 | Style | Examples |
 |---|---|
 | Numbers, year first | `2023-11-05`, `2023_11_05`, `2023.11.05` |
-| Numbers, day first | `05-11-2023`, `5.11.2023` (or month first with US date order) |
+| Numbers, day first | `05-11-2023`, `5.11.2023`, `05-11-23` (or month first with US date order) |
 | Day, month, year | `11 November 2022`, `3rd July 2021`, `11Nov23` |
 | Month, day, year | `November 11 2022`, `Nov 22, 2022`, `Sept 3 2021` |
 | Compact | `20231105` (years 1900–2099) |
 
-Only the first date in a name is changed. Anything that isn't a real date, like `31-02-2023` or `invoice 12345678`, is left alone.
+Only the first date in a name is changed. Anything that isn't a real date, like `31-02-2023`, `invoice 12345678` or `Setup v1.2.2023`, is left alone. If only one day/month order makes a real date, DateFix uses that one, so `3.13.2024` becomes `2024-03-13`.
 
 ## Command line
 
@@ -78,7 +78,7 @@ The app and the command-line tool share one core library, so they always underst
 
 **Automation (GitHub Actions)**
 - **[Tests](.github/workflows/tests.yml)** run on every push, on Windows and Linux: formatting, unit and file-system tests, Clippy lints, and a Windows build check of the desktop app.
-- **[Release](.github/workflows/release.yml)** runs when a version tag is pushed. It checks that the tag matches the version in the code, runs the tests, builds the installer, MSI and command-line tool, and publishes them on the Releases page.
+- **[Release](.github/workflows/release.yml)** runs when a version tag is pushed. It checks that the tag matches the version in the code, runs the tests, builds the installer, the portable app and the command-line tool, and publishes them on the Releases page.
 
 ## Developing
 
@@ -94,7 +94,7 @@ Open `ui/index.html` in a browser to work on the interface with demo data.
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version.
 
-**Releasing:** set the new version in `Cargo.toml` and `src-tauri/tauri.conf.json`, commit, then `git tag v2.1.0` and `git push origin v2.1.0`.
+**Releasing:** set the new version in `Cargo.toml` and `src-tauri/tauri.conf.json`, push to main, then publish a release on GitHub with a new tag such as `v2.1.2`. The Release workflow builds and attaches the downloads.
 
 ## License
 

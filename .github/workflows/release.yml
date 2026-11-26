@@ -2,7 +2,8 @@
 # as a GitHub release, whenever a version tag such as v2.0.0 is pushed.
 #
 # To release: set the same version in Cargo.toml and src-tauri/tauri.conf.json,
-# commit, then:  git tag v2.0.0  and  git push origin v2.0.0
+# push to main, then publish a release on GitHub with a new tag vX.Y.Z (the
+# tag can also be pushed by hand: git tag vX.Y.Z && git push origin vX.Y.Z).
 name: Release
 
 on:
