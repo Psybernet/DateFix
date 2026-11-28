@@ -7,7 +7,10 @@ mod parse;
 mod storage;
 mod undo;
 
-pub use files::{apply, next_free_name, plan, rename_one, Change, OnClash, Outcome};
+pub use files::{
+    apply, next_free_name, plan, plan_with, precheck, rename_one, Change, OnClash, Outcome,
+    PlanOptions, Problem,
+};
 pub use history::{
     fingerprint, safe_to_undo, Batch, BatchState, Check, Entry, Fingerprint, History, Status,
     HISTORY_FOLDER, KEEP_BATCHES,

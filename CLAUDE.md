@@ -35,7 +35,19 @@ cargo run -p datefix-cli -- "D:\Scans" -n    # try the CLI as a dry run
 
 Opening `ui/index.html` in a browser shows the interface with demo data (the
 `demoBackend()` at the bottom of main.js), which is handy for UI work and
-screenshots without building the app.
+screenshots without building the app. Hashes: `#single` (one folder, list),
+no hash (three folders, tree), `#history`, `#recover` (crash dialog),
+`#demo-empty`, and `-light` / `light` for light mode. Scripts need a page
+served over http or file:// in a real browser (headless Edge works:
+`msedge --headless=new --window-size=1240,800 --virtual-time-budget=4000
+--screenshot=out.png file:///.../ui/index.html#single`).
+
+To drive the real app in tests, run a **debug** build with
+`DATEFIX_DEBUG_PORT=9333`: it opens the WebView2 debugging port (Chrome
+DevTools protocol). Don't use `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`: it
+clashes with Tauri's own arguments and the window fails to open. If the
+window fails with "resource in use", an old msedgewebview2.exe still holds
+`target\debug\DateFix data\webview`.
 
 ## Decisions Martin has made (keep these)
 
@@ -55,8 +67,13 @@ screenshots without building the app.
 - **It never overwrites a file.** When a new name is taken, it either adds
   `_2`, `_3`… or skips the file, as the user chooses.
 - **Day-first dates by default** (Martin is in Australia); US order is an option.
-- Style: dark glass UI (Windows Mica/Acrylic via window-vibrancy, CSS
-  backdrop blur), purple-to-cyan accent gradient. Keep new UI consistent.
+- Style (2.2): functional and calm. Dark by default with a light mode
+  (`data-theme` on `<html>`), neutral greys, purple accents in a few shades
+  (`--p-200`…`--p-900`), amber for "check this", red only for "can't be
+  renamed". No glass, gradients or glow. Segoe UI, 30 px rows. Keep new UI
+  consistent with `ui/styles.css` tokens. The agreed mockup is
+  docs/ui-concepts/concepts-v2.html (open it with #list, #tree, #history,
+  #recover or #list-light).
 
 ## Releasing
 
@@ -89,8 +106,9 @@ Undo must survive crashes, restarts and files being renamed again since.
 - Undo writes an `undone` line per item and keeps the batch, so a partly
   failed undo can be retried. Keep the newest 30 finished batches; never
   prune interrupted ones.
-- The desktop UI still only has "Undo last rename". The history page and the
-  "DateFix stopped while renaming" dialog (see docs/ui-concepts) are next.
+- The app shows it on the History page and offers recovery on start
+  (`offerRecovery` in main.js runs `history_check` first, so lost renames
+  are counted).
 
 ## Lessons learned (don't repeat these)
 
@@ -100,7 +118,7 @@ Undo must survive crashes, restarts and files being renamed again since.
 - **GitHub runners drop old toolchains.** Python 3.9 vanished from Ubuntu
   26.04 runners. Keep actions on current major versions (checkout@v5,
   setup-node@v5).
-- Windows-only code (`#[cfg(windows)]`, window-vibrancy) can't be compiled on
+- Windows-only code (`#[cfg(windows)]`, such as `precheck`) can't be compiled on
   Linux. The Windows job in tests.yml runs clippy on `datefix-app` to catch it.
 - `fs::rename` on Windows replaces an existing file, so always check
   `exists()` first (see `rename_one`).
@@ -115,11 +133,11 @@ reached GitHub. It has things 2.x is missing, so these come first:
    like `10-15-30` would become dates).
 2. ~~2-digit years in numeric dates~~ (done in 2.1.2: `-` or `.` only, and
    with `.` the day and month need two digits each, so `1.2.23` isn't a date).
-3. **"Include folders" option** (on by default), so you can rename only files.
-   It needs an option in the core `plan()`, the UI and a CLI flag.
-4. **Scan in the background with progress and Cancel.** Tauri runs sync
-   commands on the main thread, so a large recursive scan freezes the window.
-   Make `scan` async or run it on a thread, and send progress events.
+3. ~~"Include folders" option~~ (done in 2.2: `PlanOptions::include_dirs`,
+   "Rename folders too", `--files-only`).
+4. ~~Scan in the background with progress and Cancel~~ (done in 2.2: async
+   commands on `spawn_blocking`, `scan-progress` / `rename-progress` events,
+   `cancel_scan`).
 
 Martin's real test names (from his Test/Template folders) are in
 `martins_test_names` in `crates/datefix-core/tests/core.rs` and must keep passing.
@@ -134,8 +152,10 @@ dates need a separator between day and year, so `June 2024` isn't 20 June '24.
 
 - Signing the installer, so Windows doesn't show "unknown publisher"
 - Auto-update (Tauri updater plugin)
-- Remembering the last folder and options between launches (save them in `DateFix data`)
-- Light theme and following the Windows theme
+- Remembering the last folders between launches (options and theme are
+  already remembered, in the WebView's storage inside `DateFix data`)
+- Export a rename from the history as CSV (shown in the mockups, not built)
+- Following the Windows light/dark setting (light and dark both exist)
 - winget or Scoop package for installing from the command line
 
 ## Commits

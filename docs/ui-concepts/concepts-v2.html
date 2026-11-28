@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DateFix UI concepts v2</title>
+<style>
+/* Dark by default, light as an option. Purple for actions and selection, in
+   a few shades. Amber = check this, red = can't be renamed as planned. */
+:root {
+  --bg: #1f1e23; --surface: #29282e; --surface-2: #25242a; --raised: #323138;
+  --border: #3a3940; --border-strong: #4b4a52; --row-line: #302f36;
+  --text: #f1f0f4; --muted: #b4b2bd; --faint: #85838f;
+  --p-900: #2b2440; --p-800: #352b55; --p-600: #7c5cf0; --p-400: #a78bfa; --p-300: #c4b5fd; --p-200: #ddd6fe;
+  --accent: var(--p-400); --accent-text: #1a1033; --accent-soft: var(--p-900); --link: var(--p-300);
+  --sel: #2c2638;
+  --warn: #fce100; --warn-soft: #433519; --warn-border: #6b5722;
+  --bad: #ff99a4; --bad-soft: #47272b; --bad-border: #7a3b42;
+  --ok: #8fd6a8;
+  --shadow: 0 16px 48px rgba(0, 0, 0, .55);
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f4f3f7; --surface: #ffffff; --surface-2: #faf9fc; --raised: #ffffff;
+  --border: #e4e2ea; --border-strong: #cdcad6; --row-line: #efedf3;
+  --text: #1c1a22; --muted: #5f5c6b; --faint: #8b8896;
+  --p-900: #f3efff; --p-800: #e9e2ff; --p-600: #6d28d9; --p-400: #7c3aed; --p-300: #6d28d9; --p-200: #5b21b6;
+  --accent: var(--p-400); --accent-text: #ffffff; --accent-soft: var(--p-900); --link: var(--p-300);
+  --sel: #f1ecff;
+  --warn: #8a5300; --warn-soft: #fff4ce; --warn-border: #f0d27e;
+  --bad: #b42318; --bad-soft: #fde8e8; --bad-border: #f5b8b5;
+  --ok: #1e7b45;
+  --shadow: 0 16px 48px rgba(40, 20, 80, .18);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--text); font: 13px/1.35 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
+svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.app { display: flex; flex-direction: column; height: 100vh; position: relative; }
+
+.titlebar { height: 36px; display: flex; align-items: center; padding-left: 12px; gap: 8px; flex: none; }
+.logo { width: 18px; height: 18px; border-radius: 5px; background: linear-gradient(135deg, var(--p-600), var(--p-400)); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; }
+.titlebar .name { font-size: 12px; font-weight: 600; }
+.titlebar .ver { font-size: 11px; color: var(--faint); }
+.tb-actions { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.tb-btn { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; color: var(--muted); font-size: 12px; }
+.tb-btn.on { background: var(--accent-soft); color: var(--text); }
+.tb-btn svg { width: 15px; height: 15px; }
+.wb { display: flex; height: 36px; margin-left: 6px; }
+.wb span { width: 46px; display: grid; place-items: center; color: var(--muted); }
+.wb svg { width: 10px; height: 10px; stroke-width: 1.2; }
+
+.toolbar { display: flex; align-items: center; gap: 8px; padding: 4px 12px 10px; flex: none; }
+.sources { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 3px 4px 3px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.sources > svg { color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 6px 0 10px; border-radius: 13px; background: var(--accent-soft); border: 1px solid var(--p-800); white-space: nowrap; }
+.chip .x { color: var(--faint); }
+.chip .x svg { width: 10px; height: 10px; }
+.chip .n { color: var(--muted); font-size: 11px; }
+.path { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add { color: var(--link); display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; white-space: nowrap; }
+.add svg { width: 13px; height: 13px; }
+.btn { height: 32px; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 5px; border: 1px solid var(--border); background: var(--raised); white-space: nowrap; color: var(--text); }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.btn.danger { color: var(--bad); }
+.btn.icon { width: 32px; padding: 0; justify-content: center; }
+.btn.subtle { border-color: transparent; background: transparent; }
+
+.options { display: flex; align-items: center; gap: 18px; padding: 0 12px 10px; flex: none; }
+.cb { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--surface-2); display: grid; place-items: center; flex: none; }
+.box.on, .box.mixed { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.box.mixed::after { content: ""; width: 8px; height: 2px; background: var(--accent-text); border-radius: 1px; }
+.box svg { width: 12px; height: 12px; stroke-width: 2.4; }
+.dd { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px 0 10px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); }
+.dd svg { width: 12px; height: 12px; color: var(--muted); }
+.muted { color: var(--muted); } .faint { color: var(--faint); } .link { color: var(--link); }
+.spacer { flex: 1; }
+
+.panel { flex: 1; min-height: 0; margin: 0 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; }
+.filterbar { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); flex: none; }
+.search { display: flex; align-items: center; gap: 6px; height: 28px; width: 210px; padding: 0 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-2); color: var(--faint); }
+.search svg { width: 14px; height: 14px; }
+.tabs { display: flex; gap: 2px; }
+.tab { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border-radius: 5px; color: var(--muted); white-space: nowrap; }
+.tab.on { background: var(--accent-soft); color: var(--text); font-weight: 600; box-shadow: inset 0 -2px var(--accent); }
+.count { font-size: 11px; padding: 0 6px; border-radius: 8px; background: var(--raised); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tab.bad .count { background: var(--bad-soft); color: var(--bad); }
+.tab.warn .count { background: var(--warn-soft); color: var(--warn); }
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.bad { background: var(--bad); } .dot.warn { background: var(--warn); } .dot.ok { background: var(--faint); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; height: 28px; }
+.seg span { display: inline-flex; align-items: center; gap: 5px; padding: 0 10px; color: var(--muted); font-size: 12px; }
+.seg span + span { border-left: 1px solid var(--border); }
+.seg span.on { background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.seg svg { width: 14px; height: 14px; }
+
+.table { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.thead, .tr { display: grid; align-items: center; gap: 12px; padding: 0 10px; }
+.thead { height: 30px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; flex: none; background: var(--surface-2); }
+.thead span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.thead .sorted { color: var(--text); font-weight: 600; }
+.thead svg { width: 10px; height: 10px; }
+.tbody { flex: 1; overflow: hidden; }
+.tr { height: 30px; border-bottom: 1px solid var(--row-line); white-space: nowrap; }
+.tr > * { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.tr.sel { background: var(--sel); box-shadow: inset 3px 0 var(--accent); }
+.tr.off { color: var(--faint); }
+.tr.bad { background: color-mix(in srgb, var(--bad-soft) 55%, transparent); }
+.ic { color: var(--faint); display: grid; place-items: center; }
+.d-old { text-decoration: underline dotted var(--faint); text-underline-offset: 3px; }
+.d-new { font-weight: 600; color: var(--p-200); }
+:root[data-theme="light"] .d-new { color: var(--p-200); }
+.mono { font-family: "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 10px; font-size: 11px; border: 1px solid var(--border); color: var(--muted); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-border); }
+.badge.bad { background: var(--bad-soft); color: var(--bad); border-color: var(--bad-border); font-weight: 600; }
+.badge.ok { color: var(--ok); border-color: transparent; padding-left: 0; }
+.badge.purple { background: var(--accent-soft); color: var(--p-300); border-color: var(--p-800); }
+.badge svg { width: 11px; height: 11px; }
+.arrow { color: var(--faint); }
+
+.statusbar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; flex: none; }
+.statusbar .info { color: var(--muted); font-variant-numeric: tabular-nums; display: flex; gap: 14px; align-items: center; }
+.statusbar .info span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Tree */
+.split { flex: 1; min-height: 0; display: grid; grid-template-columns: 290px 1fr; }
+.tree { border-right: 1px solid var(--border); overflow: hidden; padding: 6px 0; background: var(--surface-2); }
+.tree .label { padding: 6px 12px 4px; font-size: 11px; color: var(--faint); text-transform: uppercase; letter-spacing: .5px; }
+.node { height: 28px; display: flex; align-items: center; gap: 6px; padding-right: 10px; white-space: nowrap; }
+.node.on { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); font-weight: 600; }
+.node.root .nm { font-weight: 600; }
+.node .chev { width: 12px; height: 12px; color: var(--faint); }
+.node .fold { color: var(--muted); }
+.node .drive { color: var(--p-300); }
+.node .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.node .dot { margin-left: 2px; }
+.right { display: flex; flex-direction: column; min-height: 0; }
+.crumb { display: flex; align-items: center; gap: 6px; padding: 8px 12px; font-weight: 600; font-size: 14px; border-bottom: 1px solid var(--border); }
+.crumb .muted { font-weight: 400; font-size: 13px; }
+
+/* History */
+.hsplit { flex: 1; min-height: 0; display: grid; grid-template-columns: 360px 1fr; }
+.batches { border-right: 1px solid var(--border); overflow: hidden; background: var(--surface-2); }
+.batch { padding: 10px 14px; border-bottom: 1px solid var(--row-line); display: grid; grid-template-columns: 1fr auto; gap: 3px 10px; }
+.batch.on { background: var(--accent-soft); box-shadow: inset 3px 0 var(--accent); }
+.batch .t { font-weight: 600; }
+.batch .s { color: var(--muted); font-size: 12px; grid-column: 1 / -1; }
+.batch.done { color: var(--faint); }
+.batch.done .t { font-weight: 400; }
+.detail { display: flex; flex-direction: column; min-height: 0; }
+.dhead { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.dhead h2 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
+.checks { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.note { display: flex; gap: 10px; align-items: flex-start; margin-top: 10px; padding: 8px 10px; border-radius: 6px; background: var(--accent-soft); border: 1px solid var(--p-800); color: var(--muted); font-size: 12px; }
+.note svg { color: var(--p-300); margin-top: 1px; }
+
+/* Crash recovery dialog */
+.scrim { position: absolute; inset: 0; background: rgba(10, 8, 16, .55); display: grid; place-items: center; }
+:root[data-theme="light"] .scrim { background: rgba(40, 30, 60, .28); }
+.dialog { width: 520px; background: var(--raised); border: 1px solid var(--border-strong); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.dialog .body { padding: 20px 22px 16px; }
+.dialog h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; display: flex; gap: 10px; align-items: center; }
+.dialog h2 svg { width: 22px; height: 22px; color: var(--warn); }
+.dialog p { margin: 0 0 10px; color: var(--muted); }
+.progress { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; margin: 12px 0 6px; }
+.progress span { display: block; height: 100%; width: 33%; background: linear-gradient(90deg, var(--p-600), var(--p-400)); }
+.facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 12px; margin-top: 12px; }
+.facts b { font-weight: 600; }
+.dialog .foot { display: flex; gap: 8px; justify-content: flex-end; padding: 12px 16px; background: var(--surface-2); border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+"use strict";
+// ---------- Demo data ----------
+let seed = 11;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const pick = (a) => a[Math.floor(rnd() * a.length)];
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const pad = (n) => String(n).padStart(2, "0");
+const fmt = (n) => n.toLocaleString("en-AU");
+const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const SOURCES = [
+  { root: "C:\\Users\\Martin\\Documents\\Archive", short: "Archive", folders: [["", 212], ["Receipts", 318], ["Tax 2019", 64]] },
+  { root: "D:\\Scans", short: "D:\\Scans", folders: [["", 141], ["Letters", 51]] },
+  { root: "E:\\Phone backup", short: "E:\\Phone backup", folders: [["Camera", 402], ["WhatsApp", 96]] },
+];
+const STYLES = [
+  (d, m, y) => `${pad(d)}.${pad(m)}.${y}`, (d, m, y) => `${pad(d)}-${pad(m)}-${y}`,
+  (d, m, y) => `${d} ${MONTH[m - 1]} ${y}`, (d, m, y) => `${MON[m - 1]} ${d} ${y}`,
+];
+const PRE = ["scan ", "Letter ", "Bank statement ", "Insurance ", "Receipt Bunnings ", "Invoice #1042 ", "Payment summary "];
+const items = [];
+for (const src of SOURCES) for (const [sub, n] of src.folders) for (let i = 0; i < n; i++) {
+  const y = 2016 + Math.floor(rnd() * 9), m = 1 + Math.floor(rnd() * 12), d = 1 + Math.floor(rnd() * 28);
+  const phone = src.short.startsWith("E:");
+  const si = Math.floor(rnd() * 4);
+  const oldDate = phone ? `${y}${pad(m)}${pad(d)}` : STYLES[si](d, m, y);
+  const ambiguous = !phone && si < 2 && d <= 12 && d !== m;
+  items.push({
+    src, sub, oldDate, ambiguous, iso: `${y}-${pad(m)}-${pad(d)}`,
+    pre: phone ? pick(["IMG_", "PXL_", "VID_"]) : pick(PRE),
+    post: phone ? `_${100000 + Math.floor(rnd() * 800000)}.jpg` : (rnd() < .3 ? ` (${1 + Math.floor(rnd() * 3)})` : "") + pick([".pdf", ".pdf", ".jpg", ".docx"]),
+    issue: ambiguous ? "amb" : rnd() < .012 ? "taken" : rnd() < .006 ? "dupe" : null,
+    selected: rnd() > .02,
+  });
+}
+// A few that can't be renamed as planned (found by a pre-check during the scan).
+const BAD = [["inuse", 3], ["readonly", 2], ["long", 1], ["denied", 1]];
+let k = 5;
+for (const [issue, n] of BAD) for (let i = 0; i < n; i++) { items[k].issue = issue; k += 37; }
+const ISSUE = {
+  inuse:    { sev: 3, cls: "bad",  icon: "lock", text: "In use by another program" },
+  denied:   { sev: 3, cls: "bad",  icon: "block", text: "No permission to rename" },
+  readonly: { sev: 3, cls: "bad",  icon: "lock", text: "File is read-only" },
+  long:     { sev: 3, cls: "bad",  icon: "block", text: "New path over 260 characters" },
+  dupe:     { sev: 2, cls: "warn", icon: "warn", text: "Same new name as another item" },
+  taken:    { sev: 2, cls: "warn", icon: "warn", text: "Name taken · adds _2" },
+  amb:      { sev: 1, cls: "warn", icon: "swap", text: "Day or month?" },
+};
+const sev = (it) => it.issue ? ISSUE[it.issue].sev : 0;
+const total = items.length, sel = items.filter((i) => i.selected).length;
+const nBad = items.filter((i) => sev(i) === 3).length;
+const nWarn = items.filter((i) => sev(i) === 1 || sev(i) === 2).length;
+const nOff = total - sel;
+
+// ---------- Icons ----------
+const I = {
+  folder: '<svg viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/></svg>',
+  drive: '<svg viewBox="0 0 16 16"><rect x="1.5" y="5" width="13" height="6.5" rx="1.5"/><path d="M11.5 8.25h.01"/></svg>',
+  file: '<svg viewBox="0 0 16 16"><path d="M9.5 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5z"/><path d="M9.5 1.5V5H13"/></svg>',
+  check: '<svg viewBox="0 0 12 12"><path d="M2.5 6.2l2.3 2.3 4.7-5"/></svg>',
+  down: '<svg viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg>',
+  right: '<svg viewBox="0 0 12 12"><path d="M4.5 3l3 3-3 3"/></svg>',
+  sortdown: '<svg viewBox="0 0 12 12"><path d="M3 7.5l3 3 3-3M6 1.5v9"/></svg>',
+  search: '<svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3.5 3.5"/></svg>',
+  refresh: '<svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3.5H10"/></svg>',
+  undo: '<svg viewBox="0 0 16 16"><path d="M6 10L2.5 6.5 6 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H8"/></svg>',
+  history: '<svg viewBox="0 0 16 16"><path d="M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3"/><path d="M8 5v3.2l2 1.3"/></svg>',
+  warn: '<svg viewBox="0 0 16 16"><path d="M8 2l6.5 11.5h-13z"/><path d="M8 6.5v3M8 11.5v.01"/></svg>',
+  swap: '<svg viewBox="0 0 16 16"><path d="M4 2.5v11M1.5 11L4 13.5 6.5 11M12 13.5v-11M9.5 5L12 2.5 14.5 5"/></svg>',
+  lock: '<svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>',
+  block: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M3.8 12.2l8.4-8.4"/></svg>',
+  moon: '<svg viewBox="0 0 16 16"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"/></svg>',
+  sun: '<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg>',
+  table: '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6.5h13M1.5 10h13"/></svg>',
+  tree: '<svg viewBox="0 0 16 16"><path d="M3 2.5v9.5h3M3 7h3"/><rect x="7" y="5" width="7" height="4" rx="1"/><rect x="7" y="10" width="7" height="4" rx="1"/><rect x="1.5" y="1" width="3" height="3" rx=".8"/></svg>',
+  plus: '<svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>',
+  x: '<svg viewBox="0 0 10 10"><path d="M2 2l6 6M8 2l-6 6"/></svg>',
+  shield: '<svg viewBox="0 0 16 16"><path d="M8 1.5l5.5 2v4c0 3.4-2.4 5.9-5.5 7-3.1-1.1-5.5-3.6-5.5-7v-4z"/><path d="M5.5 8l1.8 1.8L10.8 6"/></svg>',
+  fp: '<svg viewBox="0 0 16 16"><path d="M4.5 13.5c1-1.6 1.5-3.4 1.5-5.5a2 2 0 0 1 4 0c0 1.2-.1 2.4-.4 3.5M8 8c0 2.6-.7 4.6-2 6.5M3 10.5c.5-1 .7-2 .7-3a4.3 4.3 0 0 1 8.6 0c0 1.1-.1 2.2-.3 3.2M12 13c.2-.5.4-1 .5-1.6"/></svg>',
+  min: '<svg viewBox="0 0 10 10"><path d="M1 5h8"/></svg>',
+  max: '<svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" rx="1"/></svg>',
+  close: '<svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg>',
+};
+const box = (s) => `<span class="box ${s === true ? "on" : s === "mixed" ? "mixed" : ""}">${s === true ? I.check : ""}</span>`;
+const cb = (on, label) => `<span class="cb">${box(on)}${label}</span>`;
+const dd = (label) => `<span class="dd">${label}${I.down}</span>`;
+const light = () => document.documentElement.dataset.theme === "light";
+
+const titlebar = (page) => `<div class="titlebar"><span class="logo">D</span><span class="name">DateFix</span><span class="ver">2.2</span>
+  <span class="tb-actions">
+    <span class="tb-btn${page === "history" ? " on" : ""}">${I.history}History</span>
+    <span class="tb-btn" title="Switch theme">${light() ? I.moon : I.sun}${light() ? "Dark" : "Light"}</span>
+  </span>
+  <span class="wb"><span>${I.min}</span><span>${I.max}</span><span>${I.close}</span></span></div>`;
+const toolbar = (multi) => `<div class="toolbar"><div class="sources">${I.folder}
+  ${multi ? SOURCES.map((s) => `<span class="chip"><span>${esc(s.short)}</span><span class="n">${fmt(items.filter((i) => i.src === s).length)}</span><span class="x">${I.x}</span></span>`).join("")
+          : `<span class="path">${esc(SOURCES[0].root)}</span><span class="spacer"></span>`}
+  <span class="add">${I.plus}Add folder</span></div>
+  <span class="btn icon" title="Scan again">${I.refresh}</span></div>`;
+const options = () => `<div class="options">${cb(true, "Include subfolders")}${cb(true, "Rename folders too")}
+  <span class="cb">Read 05-11-2023 as ${dd("5 November (day first)")}</span>
+  <span class="cb">If the new name is taken ${dd("Add _2, _3…")}</span></div>`;
+const stats = (list) => ({
+  total: list.length, bad: list.filter((i) => sev(i) === 3).length,
+  warn: list.filter((i) => sev(i) === 1 || sev(i) === 2).length,
+  off: list.filter((i) => !i.selected).length,
+  go: list.filter((i) => i.selected && sev(i) < 3).length,
+});
+const statusbar = (list) => { const c = stats(list); return `<div class="statusbar"><span class="info">
+  <span>${fmt(c.total)} names to fix · ${fmt(c.go)} selected</span>
+  <span><span class="dot bad"></span>${c.bad} can't be renamed</span>
+  <span><span class="dot warn"></span>${c.warn} to check</span></span><span class="spacer"></span>
+  <span class="btn subtle">${I.undo}Undo last rename <span class="faint">· 342 items, yesterday</span></span>
+  <span class="btn primary">Rename ${fmt(c.go)} items</span></div>`; };
+const oldName = (it) => `${esc(it.pre)}<span class="d-old">${esc(it.oldDate)}</span>${esc(it.post)}`;
+const newName = (it) => {
+  const post = it.issue === "taken" ? it.post.replace(/(\.[a-z0-9]+)$/i, "_2$1") : it.post;
+  return `${esc(it.pre)}<span class="d-new">${it.iso}</span>${esc(post)}`;
+};
+const status = (it) => it.issue ? `<span class="badge ${ISSUE[it.issue].cls}">${I[ISSUE[it.issue].icon]}${ISSUE[it.issue].text}</span>` : `<span class="faint">Ready</span>`;
+const longDate = (iso) => { const [y, m, d] = iso.split("-").map(Number); return `${d} ${MON[m - 1]} ${y}`; };
+const where = (it) => it.src.short + (it.sub ? "\\" + it.sub : "");
+const viewSwitch = (tree) => `<span class="seg"><span class="${tree ? "" : "on"}">${I.table}List</span><span class="${tree ? "on" : ""}">${I.tree}Folders</span></span>`;
+const filterTabs = (list) => { const c = stats(list); return `<span class="tabs">
+  <span class="tab on">All <span class="count">${fmt(c.total)}</span></span>
+  <span class="tab bad">Can't rename <span class="count">${c.bad}</span></span>
+  <span class="tab warn">Check <span class="count">${c.warn}</span></span>
+  <span class="tab">Unticked <span class="count">${c.off}</span></span></span>`; };
+// Most urgent first: red, then amber, then ready.
+const bySeverity = (list) => [...list].sort((a, b) => sev(b) - sev(a));
+const row = (cols, withWhere) => (it, n) => {
+  const bad = sev(it) === 3;
+  return `<div class="tr${bad ? " bad" : ""}${!it.selected || bad ? " off" : ""}${n === 9 ? " sel" : ""}" style="grid-template-columns:${cols}">
+    ${box(bad ? false : it.selected)}<span class="ic">${I.file}</span><span>${oldName(it)}</span><span class="arrow">→</span>
+    <span>${newName(it)}</span><span class="muted">${longDate(it.iso)}</span>${withWhere ? `<span class="muted">${esc(where(it))}</span>` : ""}<span>${status(it)}</span></div>`;
+};
+
+// ---------- List view (sorted by severity) ----------
+function listView(multi) {
+  const cols = "24px 18px minmax(0,1.2fr) 14px minmax(0,1.2fr) 88px minmax(0,.75fr) 200px";
+  const list = multi ? items : items.filter((i) => i.src === SOURCES[0]);
+  const rows = bySeverity(list).slice(0, 40).map(row(cols, true)).join("");
+  return `${titlebar()}${toolbar(multi)}${options()}
+  <div class="panel">
+    <div class="filterbar"><span class="search">${I.search}Filter names</span>${filterTabs(list)}<span class="spacer"></span>
+      ${viewSwitch(false)}</div>
+    <div class="table">
+      <div class="thead" style="grid-template-columns:${cols}">${box("mixed")}<span></span><span>Current name</span><span></span><span>New name</span>
+        <span>Date</span><span>Folder</span><span class="sorted">Status: most urgent first ${I.sortdown}</span></div>
+      <div class="tbody">${rows}</div>
+    </div>
+  </div>${statusbar(list)}`;
+}
+
+// ---------- Folder view: several sources as roots ----------
+function treeView() {
+  const count = (src, sub) => items.filter((i) => i.src === src && (sub == null || i.sub === sub));
+  const worst = (list) => { const s = Math.max(0, ...list.map(sev)); return s === 3 ? "bad" : s ? "warn" : ""; };
+  const node = (depth, icon, label, list, o = {}) => `<div class="node${o.on ? " on" : ""}${depth === 0 ? " root" : ""}" style="padding-left:${8 + depth * 16}px">
+    <span class="chev">${o.leaf ? "" : I.down}</span>${box(o.state ?? true)}<span class="${depth === 0 ? "drive" : "fold"}">${icon}</span>
+    <span class="nm">${esc(label)}</span>${worst(list) ? `<span class="dot ${worst(list)}"></span>` : ""}<span class="count">${fmt(list.length)}</span></div>`;
+  let tree = `<div class="label">${SOURCES.length} sources</div>`;
+  SOURCES.forEach((s, si) => {
+    tree += node(0, si ? I.drive : I.folder, s.short, count(s), { state: si === 0 ? "mixed" : true });
+    for (const [sub] of s.folders) if (sub) tree += node(1, I.folder, sub, count(s, sub), { leaf: true, on: si === 0 && sub === "Receipts", state: sub === "Tax 2019" ? false : true });
+  });
+  const here = bySeverity(count(SOURCES[0], "Receipts"));
+  const cols = "24px 18px minmax(0,1fr) 14px minmax(0,1fr) 88px 190px";
+  return `${titlebar()}${toolbar(true)}${options()}
+  <div class="panel">
+    <div class="filterbar"><span class="search">${I.search}Filter names</span>${filterTabs(items)}<span class="spacer"></span>${viewSwitch(true)}</div>
+    <div class="split"><div class="tree">${tree}</div>
+      <div class="right">
+        <div class="crumb"><span class="muted">Archive ›</span> Receipts <span class="muted">· ${here.length} names</span></div>
+        <div class="table">
+          <div class="thead" style="grid-template-columns:${cols}">${box(true)}<span></span><span>Current name</span><span></span><span>New name</span><span>Date</span><span class="sorted">Status ${I.sortdown}</span></div>
+          <div class="tbody">${here.slice(0, 36).map(row(cols, false)).join("")}</div>
+        </div>
+      </div></div>
+  </div>${statusbar(items)}`;
+}
+
+// ---------- History: undo across sessions ----------
+function historyView() {
+  const B = [
+    { t: "Today, 2:14 pm", s: "Archive, D:\\Scans, E:\\Phone backup · 1,247 renamed", badge: `<span class="badge purple">${I.shield}Ready to undo</span>`, on: true },
+    { t: "Yesterday, 9:03 pm", s: "D:\\Scans · 342 renamed", badge: `<span class="badge warn">${I.fp}6 renamed since</span>` },
+    { t: "25 Nov, 11:40 am", s: "E:\\Phone backup · stopped after 412 of 1,180", badge: `<span class="badge bad">${I.warn}Interrupted</span>` },
+    { t: "24 Nov, 4:22 pm", s: "Archive\\Receipts · 318 renamed", badge: `<span class="badge">${I.check}Fully undone</span>`, done: true },
+    { t: "20 Nov, 8:15 am", s: "D:\\Scans\\Letters · 51 renamed", badge: `<span class="badge">Kept</span>`, done: true },
+  ];
+  const batches = B.map((b) => `<div class="batch${b.on ? " on" : ""}${b.done ? " done" : ""}"><span class="t">${b.t}</span>${b.badge}<span class="s">${esc(b.s)}</span></div>`).join("");
+  const CH = [
+    ["match", "Matches"], ["match", "Matches"], ["moved", "Renamed since · found by fingerprint"], ["match", "Matches"],
+    ["changed", "Contents changed since"], ["match", "Matches"], ["match", "Matches"], ["missing", "Missing"], ["match", "Matches"],
+  ];
+  const cols = "24px 18px minmax(0,1fr) 14px minmax(0,1fr) 230px";
+  const list = items.filter((i) => !i.issue).slice(0, 30);
+  const rows = list.map((it, n) => {
+    const [kind, text] = CH[n % CH.length];
+    const badge = kind === "match" ? `<span class="badge ok">${I.check}${text}</span>`
+      : kind === "moved" ? `<span class="badge warn">${I.fp}${text}</span>`
+      : `<span class="badge bad">${I.warn}${text}</span>`;
+    const now = kind === "moved" ? `${esc(it.pre)}<span class="d-new">${it.iso}</span> final${esc(it.post)}` : newName(it);
+    return `<div class="tr${kind === "changed" || kind === "missing" ? " off" : ""}" style="grid-template-columns:${cols}">
+      ${box(kind === "match" || kind === "moved")}<span class="ic">${I.file}</span><span>${now}</span><span class="arrow">→</span><span>${oldName(it)}</span><span>${badge}</span></div>`;
+  }).join("");
+  return `${titlebar("history")}
+  <div class="toolbar" style="padding-top:4px"><span style="font-size:20px;font-weight:600">Rename history</span><span class="spacer"></span>
+    <span class="muted">Keep</span>${dd("Last 30 batches")}</div>
+  <div class="panel"><div class="hsplit">
+    <div class="batches">${batches}</div>
+    <div class="detail">
+      <div class="dhead"><h2>Today, 2:14 pm · 1,247 renamed</h2>
+        <div class="muted">3 sources · checked just now</div>
+        <div class="checks">
+          <span class="badge ok">${I.check}1,236 match</span>
+          <span class="badge warn">${I.fp}6 renamed since, found by fingerprint</span>
+          <span class="badge bad">${I.warn}3 contents changed</span>
+          <span class="badge bad">${I.warn}2 missing</span>
+        </div>
+        <div class="note">${I.shield}<div>Each file's size, date and a SHA-256 fingerprint were saved before renaming. Every rename was written to the history first, so this list stays right after a crash or a restart. Files renamed again since are found by their fingerprint. Files whose contents changed are left alone unless you tick them.</div></div>
+      </div>
+      <div class="table">
+        <div class="thead" style="grid-template-columns:${cols}">${box("mixed")}<span></span><span>Name now</span><span></span><span>Goes back to</span><span class="sorted">Check ${I.sortdown}</span></div>
+        <div class="tbody">${rows}</div>
+      </div>
+    </div>
+  </div></div>
+  <div class="statusbar"><span class="info"><span>1,242 of 1,247 can go back</span></span><span class="spacer"></span>
+    <span class="btn subtle">Export list (CSV)</span><span class="btn danger">Forget this batch</span><span class="btn primary">${I.undo}Undo 1,242 renames</span></div>`;
+}
+
+// ---------- Crash recovery on start ----------
+function recoverView() {
+  return listView(true) + `<div class="scrim"><div class="dialog"><div class="body">
+    <h2>${I.warn}DateFix stopped while renaming</h2>
+    <p>The last rename was interrupted on 25 Nov at 11:40 am, maybe by a crash or power cut. The history saved each step, so nothing is lost.</p>
+    <div class="progress"><span></span></div>
+    <div class="facts"><span class="muted">Folder</span><b>E:\\Phone backup</b>
+      <span class="muted">Renamed</span><b>412 of 1,180</b>
+      <span class="muted">Checked now</span><b>All 412 found and match their fingerprints</b></div>
+  </div><div class="foot"><span class="btn subtle">Decide later</span><span class="btn">${I.undo}Undo the 412</span><span class="btn primary">Finish the other 768</span></div></div></div>`;
+}
+
+const mode = location.hash.slice(1) || "list";
+if (mode.endsWith("-light")) document.documentElement.dataset.theme = "light";
+const base = mode.replace("-light", "");
+document.getElementById("app").innerHTML =
+  base === "tree" ? treeView() : base === "history" ? historyView() : base === "recover" ? recoverView()
+  : base === "single" ? listView(false) : listView(true);
+</script>
+</body>
+</html>

@@ -266,3 +266,80 @@ fn undo_puts_everything_back() {
     assert!(folder.join("photo 20230605.jpg").exists());
     assert!(tmp.path().join("Report Nov 22 2022.pdf").exists());
 }
+
+#[test]
+fn dates_that_could_be_read_either_way_are_flagged() {
+    for (name, ambiguous) in [
+        ("05.06.2023", true),
+        ("05-06-23", true),
+        ("05.05.2023", false), // same either way
+        ("13.06.2023", false), // 13 can't be a month
+        ("3.13.2024", false),
+        ("5 June 2023", false),
+        ("2023-06-05", false),
+        ("20230605", false),
+    ] {
+        assert_eq!(
+            extract_date(name, false).unwrap().ambiguous,
+            ambiguous,
+            "{name:?}"
+        );
+    }
+}
+
+#[test]
+fn folders_can_be_left_out_and_a_scan_can_be_cancelled() {
+    let tmp = tempfile::tempdir().unwrap();
+    let folder = tmp.path().join("Trip 5 June 2023");
+    fs::create_dir(&folder).unwrap();
+    fs::write(folder.join("photo 20230605.jpg"), "x").unwrap();
+
+    let files_only = PlanOptions {
+        recursive: true,
+        month_first: false,
+        include_dirs: false,
+    };
+    let changes = plan_with(tmp.path(), files_only, &mut |_, _| true).unwrap();
+    assert_eq!(changes.len(), 1);
+    assert!(changes[0].from.ends_with("photo 20230605.jpg"));
+
+    let mut seen = 0;
+    let stop = plan_with(tmp.path(), files_only, &mut |_, _| {
+        seen += 1;
+        false
+    });
+    assert_eq!(stop.unwrap_err().kind(), std::io::ErrorKind::Interrupted);
+    assert_eq!(seen, 1, "it stops at the first folder");
+}
+
+#[cfg(windows)]
+#[test]
+fn a_file_open_in_another_program_is_reported() {
+    use std::os::windows::fs::OpenOptionsExt;
+    let tmp = tempfile::tempdir().unwrap();
+    let file = tmp.path().join("scan 05.11.2023.pdf");
+    fs::write(&file, "x").unwrap();
+    assert_eq!(precheck(&file), None);
+
+    // Open it the way many programs do: others may read, but not rename.
+    let held = fs::OpenOptions::new()
+        .read(true)
+        .share_mode(0x1)
+        .open(&file)
+        .unwrap();
+    assert_eq!(precheck(&file), Some(Problem::InUse));
+    drop(held);
+    assert_eq!(precheck(&file), None);
+}
+
+#[cfg(windows)]
+#[test]
+fn a_clash_ignores_case_on_windows() {
+    let tmp = tempfile::tempdir().unwrap();
+    fs::write(tmp.path().join("2023-06-05.TXT"), "already there").unwrap();
+    fs::write(tmp.path().join("5 June 2023.txt"), "x").unwrap();
+    let changes = plan(tmp.path(), false, false).unwrap();
+    assert!(changes[0].clash);
+    assert!(apply(&changes, OnClash::Number)[0].is_renamed());
+    assert!(tmp.path().join("2023-06-05_2.txt").exists());
+}

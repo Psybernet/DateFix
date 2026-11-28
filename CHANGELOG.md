@@ -4,6 +4,18 @@
 
 Includes the date fixes planned for 2.1.2, which was never released.
 
+**A new interface**
+
+- A plainer, more functional look: dark by default with a light mode, purple highlights, and no see-through glass effect. Your theme and options are remembered.
+- A compact table that shows about twice as many rows, with sortable columns (current name, new name, date, folder, status). It only draws the rows on screen, so it stays quick with tens of thousands of files.
+- **Status, most urgent first.** Red for items that can't be renamed right now (in use by another program, or no permission), amber for things to check (name taken, two items would get the same name, path over 260 characters, or **Day or month?** when the date could be read either way). Tabs filter to All, Can't rename, Check and Unticked.
+- **Several folders at once.** Add folders from anywhere; with more than one, a **Folders** view shows a tree with counts and tick boxes for each folder. Switch between **List** and **Folders** at any time.
+- **Scanning runs in the background** with progress and a **Cancel** button, so the window never freezes. Renaming shows progress too.
+- **History page:** every past rename, a check of each file before undoing, and a choice of what to put back. Forget a rename you no longer need.
+- **After a crash**, DateFix offers to undo or finish the rename that was interrupted.
+- New option: **Rename folders too** (on by default), and `--files-only` on the command line.
+- Scanning is faster: name clashes are found from the folder listing, and the in-use check runs on several threads.
+
 **Undo history that survives crashes**
 
 - Every rename is kept in a **rename history** in `DateFix data\history`, not just the last one. The newest 30 batches are kept.

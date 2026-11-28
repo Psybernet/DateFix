@@ -642,7 +642,7 @@ impl History {
                         i,
                         from: c.from.clone(),
                         to: c.to.clone(),
-                        is_dir: c.from.is_dir(),
+                        is_dir: c.is_dir || c.from.is_dir(),
                         // A file that can't be read (one that's in use, say)
                         // is still renamed; undo then goes by its name alone.
                         fingerprint: fingerprint(&c.from).ok().flatten(),

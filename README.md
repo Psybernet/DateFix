@@ -7,7 +7,7 @@
 
 Messy dates in file names make files hard to sort. DateFix finds the date in each file or folder name and rewrites it as **YYYY-MM-DD**, so everything lines up in date order.
 
-![DateFix showing a preview of eight files to rename](docs/screenshot.png)
+![DateFix in dark mode, showing 594 names to fix with the ones that need a look sorted to the top](docs/screenshot.png)
 
 | Before | After |
 |---|---|
@@ -26,17 +26,25 @@ The installer isn't code-signed, so Windows may say it's from an unknown publish
 
 ## How to use it
 
-1. **Drop a folder** onto the window, or click the drop area to browse (<kbd>Ctrl</kbd>+<kbd>O</kbd>).
-2. **Check the preview.** The old date is shown in red and the new one in green. Untick anything you want to leave alone.
+1. **Drop folders** onto the window, or click **Add folder** (<kbd>Ctrl</kbd>+<kbd>O</kbd>). You can add several folders, even from different drives.
+2. **Check the preview.** Each row shows the old name, the new name and the date it found. The ones that need a look come first:
+   - **Red:** it can't be renamed right now, for example because another program has the file open. These are left unticked.
+   - **Amber:** worth a check. The new name is taken, two items would get the same name, or the date could be read either way (**Day or month?** shows both readings when you point at it).
+   - Use the tabs (**All**, **Can't rename**, **Check**, **Unticked**) and the filter box to find things, and untick anything you want to leave alone.
 3. Click **Rename**.
 
-Changed your mind? **Undo last rename** puts every name back, even after you've closed and reopened the app (<kbd>Ctrl</kbd>+<kbd>Z</kbd>).
+With one folder the preview is a list. With several, it shows a folder tree so you can work through each folder or leave a whole folder out. You can switch between **List** and **Folders** at any time. Large folders scan in the background with a **Cancel** button, and the list stays quick with tens of thousands of files.
+
+DateFix opens in dark mode; the **Light** button in the title bar switches to light mode, and it remembers your choice and options.
+
+**Undo and history.** Click **Undo last rename** (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) or **History** (<kbd>Ctrl</kbd>+<kbd>H</kbd>) to see your past renames. Before undoing, DateFix checks every file: it shows which still match, which you've renamed again since (found by their fingerprint), and which have changed or gone missing, and you choose what to put back. If DateFix was stopped part way through a rename, by a crash or a power cut, it tells you next time it starts and offers to undo it or finish it.
 
 DateFix keeps a **rename history** of your last 30 renames in the `DateFix data` folder next to the program. It saves the plan before renaming anything and writes down each rename as it happens, so even a crash or power cut part way through can be undone. Each file is recognised by a fingerprint, so undo still finds a file you've renamed again since, and it won't touch a file whose contents have changed unless you choose to.
 
 **Options**
 - **Include subfolders** also fixes names inside folders within the folder.
-- **US date order** reads `05-11-2023` as 11 May instead of 5 November.
+- **Rename folders too** (on by default). Turn it off to rename only files.
+- **Read 05-11-2023 as** 5 November (day first, the default) or 11 May (US order). If only one order makes a real date, like `3.13.2024`, that one is used.
 - **If the new name is taken**, DateFix either adds a number (`2023-06-05_2.txt`) or skips that item. It never overwrites a file.
 
 ## Dates it recognises
@@ -60,6 +68,7 @@ datefix-cli [OPTIONS] [FOLDER]
 
   -r, --recursive    Also fix names inside subfolders
   -m, --month-first  Read 05-11-2023 as 11 May (US style)
+  -f, --files-only   Rename only files, not folders
   -n, --dry-run      Only show what would change
   -y, --yes          Don't ask; add _2, _3… when a name is taken
       --undo [ID]    Put back the names from the last rename (or batch ID)
@@ -74,8 +83,8 @@ Run it without a folder and it asks for one, shows the changes and asks before r
 ```text
 crates/datefix-core   Rust library: finds dates, plans and applies renames, crash-safe rename history
 crates/datefix-cli    Command-line tool built on the core
-src-tauri             Desktop app: Tauri 2 backend, Windows Mica/Acrylic glass effect
-ui                    The interface: HTML, CSS and JavaScript, no framework
+src-tauri             Desktop app: Tauri 2 backend (scans in the background, history commands)
+ui                    The interface: HTML, CSS and JavaScript, no framework or build step
 ```
 
 The app and the command-line tool share one core library, so they always understand the same dates.

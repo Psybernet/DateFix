@@ -2,6 +2,7 @@
 
 use crate::parse::new_name_for;
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -14,6 +15,9 @@ pub struct Change {
     /// Something already has the new name.
     #[serde(default)]
     pub clash: bool,
+    /// It's a folder.
+    #[serde(default)]
+    pub is_dir: bool,
 }
 
 /// What to do when the new name is already taken.
@@ -42,56 +46,153 @@ impl Outcome {
     }
 }
 
+/// Choices for [`plan_with`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PlanOptions {
+    /// Also look inside subfolders.
+    pub recursive: bool,
+    /// Read 05-11-2023 as 11 May (US style).
+    pub month_first: bool,
+    /// Rename folders too, not just files.
+    pub include_dirs: bool,
+}
+
 /// Lists every file and folder in `dir` whose name needs its date fixed.
 ///
 /// With `recursive`, subfolders are included and the deepest items come
 /// first, so renaming a folder never breaks the paths of what's inside it.
 pub fn plan(dir: &Path, recursive: bool, month_first: bool) -> io::Result<Vec<Change>> {
+    let options = PlanOptions {
+        recursive,
+        month_first,
+        include_dirs: true,
+    };
+    plan_with(dir, options, &mut |_, _| true)
+}
+
+/// Like [`plan`], with more choices. `visit` is told about each folder as
+/// it's read, with how many items are in it; returning `false` stops the
+/// scan with an [`io::ErrorKind::Interrupted`] error.
+pub fn plan_with(
+    dir: &Path,
+    options: PlanOptions,
+    visit: &mut dyn FnMut(&Path, usize) -> bool,
+) -> io::Result<Vec<Change>> {
     let mut changes = Vec::new();
-    plan_into(dir, recursive, month_first, &mut changes)?;
+    plan_into(dir, options, visit, &mut changes)?;
     Ok(changes)
+}
+
+fn cancelled() -> io::Error {
+    io::Error::new(io::ErrorKind::Interrupted, "the scan was cancelled")
 }
 
 fn plan_into(
     dir: &Path,
-    recursive: bool,
-    month_first: bool,
+    options: PlanOptions,
+    visit: &mut dyn FnMut(&Path, usize) -> bool,
     out: &mut Vec<Change>,
 ) -> io::Result<()> {
     let mut files = Vec::new();
     let mut dirs = Vec::new();
+    // Every name in the folder, to spot clashes without asking the disk
+    // about each new name.
+    let mut taken = HashSet::new();
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let kind = entry.file_type()?;
+        taken.insert(name_key(&entry.file_name().to_string_lossy()));
         if kind.is_dir() {
             dirs.push(entry.path());
         } else {
             files.push(entry.path());
         }
     }
+    if !visit(dir, files.len() + dirs.len()) {
+        return Err(cancelled());
+    }
     files.sort();
     dirs.sort();
 
-    if recursive {
+    if options.recursive {
         for sub in &dirs {
-            // A folder we can't read shouldn't stop the whole scan.
-            let _ = plan_into(sub, recursive, month_first, out);
+            match plan_into(sub, options, visit, out) {
+                Err(e) if e.kind() == io::ErrorKind::Interrupted => return Err(e),
+                // A folder we can't read shouldn't stop the whole scan.
+                _ => {}
+            }
         }
     }
-    for path in files.iter().chain(dirs.iter()) {
+    let dirs = if options.include_dirs { &dirs[..] } else { &[] };
+    let all = files
+        .iter()
+        .map(|f| (f, false))
+        .chain(dirs.iter().map(|d| (d, true)));
+    for (path, is_dir) in all {
         let Some(name) = path.file_name().and_then(|n| n.to_str()) else {
             continue;
         };
-        if let Some(new_name) = new_name_for(name, month_first) {
-            let to = path.with_file_name(new_name);
+        if let Some(new_name) = new_name_for(name, options.month_first) {
             out.push(Change {
-                clash: to.exists(),
+                clash: taken.contains(&name_key(&new_name)),
                 from: path.clone(),
-                to,
+                to: path.with_file_name(new_name),
+                is_dir,
             });
         }
     }
     Ok(())
+}
+
+/// A name as the file system compares it: Windows ignores case.
+fn name_key(name: &str) -> String {
+    if cfg!(windows) {
+        name.to_lowercase()
+    } else {
+        name.to_string()
+    }
+}
+
+/// Why an item probably can't be renamed right now.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Problem {
+    /// Another program has the file open and doesn't allow renaming it.
+    InUse,
+    /// Windows won't let this user rename it.
+    NoPermission,
+}
+
+/// Checks, without changing anything, whether a file could be renamed now.
+/// It asks Windows for the same access a rename needs. Things can change
+/// before the rename, which reports its own errors anyway. Folders, and
+/// systems other than Windows, aren't checked.
+pub fn precheck(path: &Path) -> Option<Problem> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const DELETE: u32 = 0x0001_0000;
+        const SHARE_ALL: u32 = 0x7; // read, write and delete
+        const SHARING_VIOLATION: i32 = 32;
+        const ACCESS_DENIED: i32 = 5;
+        if !fs::symlink_metadata(path).ok()?.is_file() {
+            return None;
+        }
+        let opened = fs::OpenOptions::new()
+            .access_mode(DELETE)
+            .share_mode(SHARE_ALL)
+            .open(path);
+        match opened.err()?.raw_os_error() {
+            Some(SHARING_VIOLATION) => Some(Problem::InUse),
+            Some(ACCESS_DENIED) => Some(Problem::NoPermission),
+            _ => None,
+        }
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = path;
+        None
+    }
 }
 
 /// `path` with `_n` added before the extension: `a.txt` becomes `a_2.txt`.

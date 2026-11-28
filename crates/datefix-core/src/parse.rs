@@ -106,23 +106,27 @@ fn full_year(year: &str) -> Option<i32> {
     })
 }
 
-fn date_from(caps: &Captures, shape: Shape, month_first: bool) -> Option<NaiveDate> {
+/// The date `caps` holds, and whether the day and month could be read the
+/// other way round too (both 12 or under, and different).
+fn date_from(caps: &Captures, shape: Shape, month_first: bool) -> Option<(NaiveDate, bool)> {
     let text = |name: &str| caps.name(name).map(|m| m.as_str());
     let num = |name: &str| text(name)?.parse::<u32>().ok();
     let year = full_year(text("y")?)?;
     let real = |day, month| NaiveDate::from_ymd_opt(year, month, day);
+    let certain = |date: Option<NaiveDate>| date.map(|d| (d, false));
     match shape {
-        Shape::YearFirst | Shape::Compact => real(num("d")?, num("m")?),
+        Shape::YearFirst | Shape::Compact => certain(real(num("d")?, num("m")?)),
         Shape::DayThenMonthName | Shape::MonthNameThenDay => {
-            real(num("d")?, month_number(text("mon")?)?)
+            certain(real(num("d")?, month_number(text("mon")?)?))
         }
         Shape::NumbersYearLast | Shape::NumbersShortYear => {
             let (a, b) = (num("a")?, num("b")?);
             let (day, month) = if month_first { (b, a) } else { (a, b) };
-            match shape {
+            let either_way = a != b && a <= 12 && b <= 12;
+            let date = match shape {
                 // With a 4-digit year, if only the other order is a real
                 // date (3.13.2024), use it.
-                Shape::NumbersYearLast => real(day, month).or_else(|| real(month, day)),
+                Shape::NumbersYearLast => real(day, month).or_else(|| real(month, day))?,
                 // 2-digit years are less certain: "1.2.23" is more likely a
                 // version than a date, so with dots both parts need 2 digits,
                 // and the order is never swapped.
@@ -131,9 +135,10 @@ fn date_from(caps: &Captures, shape: Shape, month_first: bool) -> Option<NaiveDa
                     if dots && (text("a")?.len() != 2 || text("b")?.len() != 2) {
                         return None;
                     }
-                    real(day, month)
+                    real(day, month)?
                 }
-            }
+            };
+            Some((date, either_way))
         }
     }
 }
@@ -145,6 +150,9 @@ pub struct FoundDate {
     pub iso: String,
     /// The text in the name that held the date.
     pub matched: String,
+    /// The day and month could also be read the other way round
+    /// (`05.06.2023`), so it's worth a look.
+    pub ambiguous: bool,
 }
 
 /// A real date and where it is in the name.
@@ -153,6 +161,7 @@ struct Candidate {
     span: Range<usize>,
     /// Has a 4-digit year, so it's more certain than a 2-digit one.
     full_year: bool,
+    ambiguous: bool,
 }
 
 /// Every real date `re` finds in `name`. After each match the search moves
@@ -164,11 +173,12 @@ fn all_in(name: &str, shape: Shape, re: &Regex, month_first: bool, out: &mut Vec
         let (Some(whole), Some(year)) = (caps.get(0), caps.name("y")) else {
             return;
         };
-        if let Some(date) = date_from(&caps, shape, month_first) {
+        if let Some((date, ambiguous)) = date_from(&caps, shape, month_first) {
             out.push(Candidate {
                 date,
                 span: whole.range(),
                 full_year: year.as_str().len() == 4,
+                ambiguous,
             });
         }
         let Some(first) = name[whole.start()..].chars().next() else {
@@ -198,6 +208,7 @@ pub fn extract_date(name: &str, month_first: bool) -> Option<FoundDate> {
     Some(FoundDate {
         iso: found.date.format("%Y-%m-%d").to_string(),
         matched: name[found.span].to_string(),
+        ambiguous: found.ambiguous,
     })
 }
 

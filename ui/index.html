@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,120 +7,164 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
-
+<div class="app">
   <header class="titlebar" data-tauri-drag-region>
-    <div class="brand" data-tauri-drag-region>
-      <img src="icon.png" alt="" width="22" height="22">
-      <span data-tauri-drag-region>DateFix</span>
-      <span class="pill" data-tauri-drag-region>2.0</span>
-    </div>
-    <div class="window-buttons">
-      <button id="win-min" title="Minimise" aria-label="Minimise"><svg viewBox="0 0 12 12"><path d="M2 6h8"/></svg></button>
-      <button id="win-max" title="Maximise" aria-label="Maximise"><svg viewBox="0 0 12 12"><rect x="2.5" y="2.5" width="7" height="7" rx="1.2"/></svg></button>
-      <button id="win-close" class="close" title="Close" aria-label="Close"><svg viewBox="0 0 12 12"><path d="M3 3l6 6M9 3l-6 6"/></svg></button>
+    <img class="logo" src="icon.png" alt="" width="18" height="18" data-tauri-drag-region>
+    <span class="name" data-tauri-drag-region>DateFix</span>
+    <span class="ver" id="version" data-tauri-drag-region></span>
+    <span class="drag" data-tauri-drag-region></span>
+    <button class="tb-btn" id="nav-history" type="button" title="Rename history (Ctrl+H)">
+      <svg viewBox="0 0 16 16"><path d="M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3"/><path d="M8 5v3.2l2 1.3"/></svg>
+      <span>History</span>
+    </button>
+    <button class="tb-btn" id="theme" type="button" title="Switch between dark and light">
+      <svg class="sun" viewBox="0 0 16 16"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg>
+      <svg class="moon" viewBox="0 0 16 16"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7z"/></svg>
+      <span id="theme-label">Light</span>
+    </button>
+    <div class="wb">
+      <button id="win-min" type="button" aria-label="Minimise"><svg viewBox="0 0 10 10"><path d="M1 5h8"/></svg></button>
+      <button id="win-max" type="button" aria-label="Maximise"><svg viewBox="0 0 10 10"><rect x="1.5" y="1.5" width="7" height="7" rx="1"/></svg></button>
+      <button id="win-close" class="close" type="button" aria-label="Close"><svg viewBox="0 0 10 10"><path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/></svg></button>
     </div>
   </header>
 
-  <main class="layout">
-    <aside class="side">
-      <section class="card">
-        <h2>Folder</h2>
-        <button id="dropzone" class="dropzone" type="button">
-          <svg class="dz-icon" viewBox="0 0 48 48" aria-hidden="true">
-            <path d="M6 14a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/>
-            <path d="M24 21v11M19 27l5 5 5-5"/>
-          </svg>
-          <strong>Drop a folder here</strong>
-          <span>or click to browse <kbd>Ctrl</kbd> <kbd>O</kbd></span>
+  <!-- ===== Rename page ===== -->
+  <main class="page" id="page-main">
+    <div class="toolbar">
+      <div class="sources" id="sources">
+        <svg viewBox="0 0 16 16"><path d="M1.5 4.5a1 1 0 0 1 1-1h3.5l1.5 1.5h6a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1z"/></svg>
+        <div class="chips" id="chips"><span class="placeholder">No folder chosen yet</span></div>
+        <button class="add" id="add-folder" type="button" title="Add a folder (Ctrl+O)">
+          <svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Add folder
         </button>
-        <div id="folder-chip" class="folder-chip" hidden>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
-          <span id="folder-path"></span>
-          <button id="rescan" class="icon-btn" title="Scan again" aria-label="Scan again">
-            <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>
-          </button>
-        </div>
-      </section>
+      </div>
+      <button class="btn icon" id="rescan" type="button" title="Scan again (F5)" aria-label="Scan again" disabled>
+        <svg viewBox="0 0 16 16"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2.5v3.5H10"/></svg>
+      </button>
+    </div>
 
-      <section class="card">
-        <h2>Options</h2>
-        <label class="switch">
-          <input type="checkbox" id="opt-recursive">
-          <span class="track"><span class="thumb"></span></span>
-          <span class="label">Include subfolders</span>
-        </label>
-        <label class="switch">
-          <input type="checkbox" id="opt-month-first">
-          <span class="track"><span class="thumb"></span></span>
-          <span class="label">US date order <small>05-11-2023 = 11 May</small></span>
-        </label>
-        <div class="field">
-          <span class="field-label">If the new name is taken</span>
-          <div class="segmented" role="radiogroup" aria-label="If the new name is taken">
-            <button type="button" role="radio" data-clash="number" aria-checked="true">Add a number</button>
-            <button type="button" role="radio" data-clash="skip" aria-checked="false">Skip it</button>
-          </div>
-        </div>
-      </section>
+    <div class="options">
+      <label class="cb"><input type="checkbox" id="opt-recursive"><span>Include subfolders</span></label>
+      <label class="cb"><input type="checkbox" id="opt-folders" checked><span>Rename folders too</span></label>
+      <label class="field">Read 05-11-2023 as
+        <select id="opt-order">
+          <option value="day">5 November (day first)</option>
+          <option value="month">11 May (month first, US)</option>
+        </select>
+      </label>
+      <label class="field">If the new name is taken
+        <select id="opt-clash">
+          <option value="number">Add _2, _3…</option>
+          <option value="skip">Skip it</option>
+        </select>
+      </label>
+    </div>
 
-      <section class="card formats">
-        <h2>Dates it understands</h2>
-        <ul>
-          <li><code>05.11.2023</code><code>2023_11_05</code></li>
-          <li><code>11 November 2022</code><code>11Nov23</code></li>
-          <li><code>Nov 22, 2022</code><code>20231105</code></li>
-        </ul>
-        <p>All become <code class="iso">2023-11-05</code></p>
-      </section>
-    </aside>
-
-    <section class="card preview">
-      <div class="preview-head">
-        <div>
-          <h2>Preview</h2>
-          <p id="summary" class="muted">Choose a folder to see what would change.</p>
+    <section class="panel" id="panel">
+      <div class="filterbar">
+        <label class="search"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5l3.5 3.5"/></svg>
+          <input id="filter" type="search" placeholder="Filter names" aria-label="Filter names" spellcheck="false"></label>
+        <div class="tabs" id="tabs" role="tablist">
+          <button type="button" role="tab" data-tab="all" class="tab on">All <span class="count" data-count="all">0</span></button>
+          <button type="button" role="tab" data-tab="bad" class="tab bad">Can't rename <span class="count" data-count="bad">0</span></button>
+          <button type="button" role="tab" data-tab="check" class="tab warn">Check <span class="count" data-count="check">0</span></button>
+          <button type="button" role="tab" data-tab="off" class="tab">Unticked <span class="count" data-count="off">0</span></button>
         </div>
-        <div class="preview-tools">
-          <div class="search">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg>
-            <input id="filter" type="search" placeholder="Filter" aria-label="Filter names" disabled>
-          </div>
-          <label class="check select-all" title="Select all">
-            <input type="checkbox" id="select-all" disabled>
-            <span class="box"></span>
-            <span>All</span>
-          </label>
+        <span class="spacer"></span>
+        <div class="seg" id="view" role="radiogroup" aria-label="View">
+          <button type="button" role="radio" data-view="list" aria-checked="true">
+            <svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6.5h13M1.5 10h13"/></svg>List</button>
+          <button type="button" role="radio" data-view="tree" aria-checked="false">
+            <svg viewBox="0 0 16 16"><path d="M3 2.5v9.5h3M3 7h3"/><rect x="7" y="5" width="7" height="4" rx="1"/><rect x="7" y="10" width="7" height="4" rx="1"/><rect x="1.5" y="1" width="3" height="3" rx=".8"/></svg>Folders</button>
         </div>
       </div>
 
-      <div id="list" class="list" role="list">
-        <div class="empty" id="empty">
-          <div class="empty-art" aria-hidden="true">
-            <span class="ghost-row"></span><span class="ghost-row"></span><span class="ghost-row"></span>
+      <div class="content" id="content" hidden>
+        <aside class="tree" id="tree" hidden></aside>
+        <div class="right">
+          <div class="crumb" id="crumb" hidden></div>
+          <div class="table">
+            <div class="thead" id="thead"></div>
+            <div class="tbody" id="tbody" tabindex="0"><div class="vspace" id="vspace"></div></div>
           </div>
-          <p><strong>Nothing to show yet</strong><br>Drop a folder anywhere on this window.</p>
         </div>
       </div>
 
-      <footer class="actions">
-        <button id="undo" class="btn ghost" disabled>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>
-          <span id="undo-label">Undo last rename</span>
+      <div class="state" id="empty">
+        <button class="dropzone" id="dropzone" type="button">
+          <svg viewBox="0 0 48 48"><path d="M6 14a4 4 0 0 1 4-4h9l4 4h15a4 4 0 0 1 4 4v18a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4z"/><path d="M24 21v11M19 27l5 5 5-5"/></svg>
+          <strong>Drop folders here</strong>
+          <span>or click to choose · <kbd>Ctrl</kbd> <kbd>O</kbd></span>
         </button>
-        <button id="apply" class="btn primary" disabled>
-          <span id="apply-label">Rename</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
-      </footer>
+        <p class="hint">DateFix shows every change first. Nothing is renamed until you click <b>Rename</b>, and every rename can be undone.</p>
+      </div>
+
+      <div class="state" id="nothing" hidden>
+        <svg class="big" viewBox="0 0 48 48"><circle cx="24" cy="24" r="17"/><path d="M16.5 24.5l5 5 10-11"/></svg>
+        <strong>Nothing to fix</strong>
+        <span class="muted" id="nothing-text">Every date in these names is already YYYY-MM-DD.</span>
+      </div>
+
+      <div class="state" id="busy" hidden>
+        <strong id="busy-title">Scanning…</strong>
+        <div class="progress" id="busy-bar"><span></span></div>
+        <span class="muted" id="busy-text"></span>
+        <button class="btn" id="cancel-scan" type="button">Cancel</button>
+      </div>
     </section>
+
+    <footer class="statusbar">
+      <span class="info" id="info"></span>
+      <span class="spacer"></span>
+      <button class="btn subtle" id="undo-last" type="button" hidden>
+        <svg viewBox="0 0 16 16"><path d="M6 10L2.5 6.5 6 3"/><path d="M2.5 6.5h7a4 4 0 0 1 0 8H8"/></svg>
+        <span id="undo-label">Undo last rename</span>
+      </button>
+      <button class="btn primary" id="apply" type="button" disabled>Rename</button>
+    </footer>
   </main>
 
-  <div id="drop-overlay" class="drop-overlay" hidden>
-    <div><strong>Drop to scan this folder</strong></div>
-  </div>
-  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <!-- ===== History page ===== -->
+  <main class="page" id="page-history" hidden>
+    <div class="toolbar">
+      <button class="btn subtle" id="back" type="button" title="Back (Esc)">
+        <svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5"/></svg>Back
+      </button>
+      <h1>Rename history</h1>
+      <span class="spacer"></span>
+      <span class="muted">The newest 30 renames are kept</span>
+    </div>
+    <section class="panel">
+      <div class="hsplit">
+        <div class="batches" id="batches"></div>
+        <div class="detail" id="detail">
+          <div class="dhead" id="dhead"></div>
+          <div class="table" id="htable" hidden>
+            <div class="thead" id="hthead"></div>
+            <div class="tbody" id="htbody" tabindex="0"><div class="vspace" id="hvspace"></div></div>
+          </div>
+          <div class="state" id="hstate" hidden></div>
+        </div>
+      </div>
+    </section>
+    <footer class="statusbar">
+      <span class="info" id="hinfo"></span>
+      <span class="spacer"></span>
+      <button class="btn danger" id="forget" type="button" hidden>Forget this rename</button>
+      <button class="btn" id="resume" type="button" hidden>Finish it</button>
+      <button class="btn primary" id="hundo" type="button" disabled>Undo</button>
+    </footer>
+  </main>
+</div>
 
-  <script src="main.js"></script>
+<div class="drop-overlay" id="drop-overlay" hidden><div>Drop to add these folders</div></div>
+<div class="scrim" id="modal" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="body"><h2 id="modal-title"></h2><div id="modal-body"></div></div>
+  <div class="foot" id="modal-foot"></div>
+</div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="main.js"></script>
 </body>
 </html>

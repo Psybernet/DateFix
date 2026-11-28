@@ -2,8 +2,8 @@
 
 use clap::Parser;
 use datefix_core::{
-    data_dir_next_to_exe, plan, safe_to_undo, Batch, BatchState, History, OnClash, Outcome,
-    DATA_FOLDER,
+    data_dir_next_to_exe, plan_with, safe_to_undo, Batch, BatchState, History, OnClash, Outcome,
+    PlanOptions, DATA_FOLDER,
 };
 use std::io::{self, BufRead, Write};
 use std::path::{Path, PathBuf};
@@ -21,6 +21,9 @@ struct Args {
     /// Read 05-11-2023 as 11 May (US style) instead of 5 November
     #[arg(short, long)]
     month_first: bool,
+    /// Rename only files, not folders
+    #[arg(short, long)]
+    files_only: bool,
     /// Only show what would change
     #[arg(short = 'n', long)]
     dry_run: bool,
@@ -223,7 +226,12 @@ fn main() -> ExitCode {
         return ExitCode::FAILURE;
     }
 
-    let changes = match plan(&directory, args.recursive, args.month_first) {
+    let options = PlanOptions {
+        recursive: args.recursive,
+        month_first: args.month_first,
+        include_dirs: !args.files_only,
+    };
+    let changes = match plan_with(&directory, options, &mut |_, _| true) {
         Ok(changes) => changes,
         Err(e) => {
             eprintln!("Couldn't read {}: {e}", directory.display());
