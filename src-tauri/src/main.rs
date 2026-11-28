@@ -2,8 +2,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use datefix_core::{
-    apply, data_dir_next_to_exe, extract_date, plan, usable_dir, Change, Journal, OnClash, Outcome,
-    DATA_FOLDER, UNDO_FILE,
+    data_dir_next_to_exe, extract_date, plan, safe_to_undo, usable_dir, Change, History, OnClash,
+    Outcome, DATA_FOLDER,
 };
 use serde::Serialize;
 use std::path::{Path, PathBuf};
@@ -59,8 +59,8 @@ fn name_of(path: &Path) -> String {
         .unwrap_or_default()
 }
 
-/// Where DateFix keeps its undo history and the window's browser data.
-struct DataDir(PathBuf);
+/// The rename history, kept in the data folder.
+struct Hist(History);
 
 /// "DateFix data" next to DateFix.exe, for both the installed and the
 /// portable version. Only if that can't be written to (for example a
@@ -75,10 +75,6 @@ fn choose_data_dir(app: &AppHandle) -> PathBuf {
         .unwrap_or_else(|_| std::env::temp_dir().join(DATA_FOLDER));
     let _ = usable_dir(&fallback);
     fallback
-}
-
-fn journal_path(app: &AppHandle) -> Result<PathBuf, String> {
-    Ok(app.state::<DataDir>().0.join(UNDO_FILE))
 }
 
 fn summarise(outcomes: &[Outcome]) -> Summary {
@@ -156,41 +152,42 @@ fn scan(folder: PathBuf, recursive: bool, month_first: bool) -> Result<Scan, Str
     Ok(Scan { folder, items })
 }
 
-/// Renames the chosen items and remembers them so they can be undone.
+/// Renames the chosen items. The plan is saved in the history first, so it
+/// can be undone even after a crash; if that can't be saved, nothing is renamed.
 #[tauri::command]
 fn rename(
-    app: AppHandle,
+    history: State<Hist>,
     folder: PathBuf,
     changes: Vec<Change>,
     on_clash: OnClash,
 ) -> Result<Summary, String> {
-    let outcomes = apply(&changes, on_clash);
-    if let Some(journal) = Journal::from_outcomes(&folder, &outcomes) {
-        journal
-            .save(&journal_path(&app)?)
-            .map_err(|e| e.to_string())?;
-    }
+    let (_, outcomes) = history
+        .0
+        .run(&[folder], &changes, |_| on_clash, |_| {})
+        .map_err(|e| format!("Nothing was renamed: the rename history couldn't be saved ({e})"))?;
     Ok(summarise(&outcomes))
 }
 
-/// The last rename that can still be undone, if any.
+/// The newest rename that can still be undone, if any.
 #[tauri::command]
-fn last_rename(app: AppHandle) -> Option<UndoInfo> {
-    let journal = Journal::load(&journal_path(&app).ok()?)?;
+fn last_rename(history: State<Hist>) -> Option<UndoInfo> {
+    let batch = history.0.latest_undoable()?;
     Some(UndoInfo {
-        count: journal.renames.len(),
-        folder: journal.folder,
-        when: journal.when,
+        count: batch.renamed() - batch.undone(),
+        folder: batch.folders.first().cloned().unwrap_or_default(),
+        when: batch.started,
     })
 }
 
-/// Puts the names from the last rename back.
+/// Puts the names from the newest rename back. Items that can't be put back
+/// stay in the history, so the undo can be tried again.
 #[tauri::command]
-fn undo(app: AppHandle) -> Result<Summary, String> {
-    let path = journal_path(&app)?;
-    let journal = Journal::load(&path).ok_or("There's nothing to undo")?;
-    let outcomes = journal.undo();
-    let _ = std::fs::remove_file(&path);
+fn undo(history: State<Hist>) -> Result<Summary, String> {
+    let mut batch = history
+        .0
+        .latest_undoable()
+        .ok_or("There's nothing to undo")?;
+    let outcomes = batch.undo(safe_to_undo).map_err(|e| e.to_string())?;
     Ok(summarise(&outcomes))
 }
 
@@ -199,7 +196,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let data_dir = choose_data_dir(app.handle());
-            app.manage(DataDir(data_dir.clone()));
+            app.manage(Hist(History::open(&data_dir)));
 
             // The window is created here rather than from the config, so the
             // browser engine's own files go in the same data folder too.

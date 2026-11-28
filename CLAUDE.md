@@ -10,7 +10,8 @@ AI-assisted developer roles, so clean code, tests and CI matter as much as featu
 
 ```text
 crates/datefix-core   Library: date parsing (parse.rs), planning and renaming
-                      (files.rs), undo journal (undo.rs), data folder (storage.rs)
+                      (files.rs), rename history (history.rs), data folder
+                      (storage.rs), old pre-2.2 undo file (undo.rs)
 crates/datefix-cli    Command-line tool, binary name datefix-cli
 src-tauri             Desktop app backend (main.rs), tauri.conf.json,
                       capabilities/, icons/, windows/hooks.nsh (NSIS hooks)
@@ -38,7 +39,7 @@ screenshots without building the app.
 
 ## Decisions Martin has made (keep these)
 
-- **Everything stays next to the program.** Undo history (`last-rename.json`)
+- **Everything stays next to the program.** The rename history (`history\`)
   and WebView2 data go in a `DateFix data` folder next to the exe, for the
   installed version, the portable version and the CLI. Fall back to app data
   only if that folder can't be written. Don't add files in AppData or the
@@ -68,6 +69,28 @@ screenshots without building the app.
 4. `.github/workflows/release.yml` checks that the tag matches both versions,
    runs the tests, builds the installer, portable exe and CLI, and attaches
    them to the release. It takes about 10–15 minutes.
+
+## Rename history (history.rs)
+
+Undo must survive crashes, restarts and files being renamed again since.
+
+- One `.jsonl` file per batch in `DateFix data\history`. Lines are only
+  appended: `batch` header, a `plan` line per item (with fingerprint), all
+  synced to disk **before the first rename**; then `done` per rename,
+  `finished` at the end, and `undone` per name put back. A torn last line is
+  ignored. No `finished` line means the batch was interrupted.
+- If the plan can't be saved, nothing is renamed (`History::run` returns Err).
+- Fingerprint = size + SHA-256 of the first and last 64 KiB. Used to find
+  renames whose `done` line was lost in a crash (`recover`), files renamed
+  again since (`RenamedSince`), and changed contents (`ContentsChanged`,
+  never undone unless chosen).
+- Folders come after their contents in a batch; `Batch::current` maps
+  recorded paths through folders renamed in the same batch.
+- Undo writes an `undone` line per item and keeps the batch, so a partly
+  failed undo can be retried. Keep the newest 30 finished batches; never
+  prune interrupted ones.
+- The desktop UI still only has "Undo last rename". The history page and the
+  "DateFix stopped while renaming" dialog (see docs/ui-concepts) are next.
 
 ## Lessons learned (don't repeat these)
 
@@ -113,7 +136,6 @@ dates need a separator between day and year, so `June 2024` isn't 20 June '24.
 - Auto-update (Tauri updater plugin)
 - Remembering the last folder and options between launches (save them in `DateFix data`)
 - Light theme and following the Windows theme
-- Undo history for more than the last batch
 - winget or Scoop package for installing from the command line
 
 ## Commits

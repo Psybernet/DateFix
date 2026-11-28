@@ -1,6 +1,19 @@
 # Changelog
 
-## 2.1.2 (unreleased)
+## 2.2.0 (unreleased)
+
+Includes the date fixes planned for 2.1.2, which was never released.
+
+**Undo history that survives crashes**
+
+- Every rename is kept in a **rename history** in `DateFix data\history`, not just the last one. The newest 30 batches are kept.
+- **Crash-safe.** The whole plan is saved to disk before anything is renamed, and each rename is written down as it happens. If DateFix, Windows or the power stops part way, the history knows exactly what was renamed. If the history can't be saved, nothing is renamed.
+- **Files are recognised by a fingerprint** (size and a SHA-256 of the start and end of the file). Undo finds a file that was renamed again since, and it won't put the old name on a file whose contents have changed unless you choose to.
+- **Undo never loses track.** Items that can't be put back (moved, deleted, or the old name is taken) stay in the history, so you can fix the problem and undo again. Before, a partly failed undo forgot the rest.
+- The old `last-rename.json` is moved into the new history automatically.
+- Command line: `--history` lists past renames, `--undo [ID]` undoes the newest or a chosen one, and `--resume [ID]` finishes an interrupted rename. It exits with an error code when something fails.
+
+**Dates**
 
 - New: when only one day/month order makes a real date, DateFix uses it. `3.13.2024` becomes 13 March 2024 instead of being skipped.
 - New: 2-digit years in numeric dates, such as `05-11-23` and `05.11.23`. With dots, the day and month need two digits each, so version numbers like `1.2.23` are left alone.

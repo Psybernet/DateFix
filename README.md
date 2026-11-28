@@ -30,7 +30,9 @@ The installer isn't code-signed, so Windows may say it's from an unknown publish
 2. **Check the preview.** The old date is shown in red and the new one in green. Untick anything you want to leave alone.
 3. Click **Rename**.
 
-Changed your mind? **Undo last rename** puts every name back, even after you've closed and reopened the app (<kbd>Ctrl</kbd>+<kbd>Z</kbd>). The undo history is kept in the `DateFix data` folder next to the program.
+Changed your mind? **Undo last rename** puts every name back, even after you've closed and reopened the app (<kbd>Ctrl</kbd>+<kbd>Z</kbd>).
+
+DateFix keeps a **rename history** of your last 30 renames in the `DateFix data` folder next to the program. It saves the plan before renaming anything and writes down each rename as it happens, so even a crash or power cut part way through can be undone. Each file is recognised by a fingerprint, so undo still finds a file you've renamed again since, and it won't touch a file whose contents have changed unless you choose to.
 
 **Options**
 - **Include subfolders** also fixes names inside folders within the folder.
@@ -60,7 +62,9 @@ datefix-cli [OPTIONS] [FOLDER]
   -m, --month-first  Read 05-11-2023 as 11 May (US style)
   -n, --dry-run      Only show what would change
   -y, --yes          Don't ask; add _2, _3… when a name is taken
-      --undo         Put back the names changed by the last rename
+      --undo [ID]    Put back the names from the last rename (or batch ID)
+      --history      List past renames and their IDs
+      --resume [ID]  Finish a rename that was interrupted
 ```
 
 Run it without a folder and it asks for one, shows the changes and asks before renaming.
@@ -68,7 +72,7 @@ Run it without a folder and it asks for one, shows the changes and asks before r
 ## How it's built
 
 ```text
-crates/datefix-core   Rust library: finds dates, plans and applies renames, undo journal
+crates/datefix-core   Rust library: finds dates, plans and applies renames, crash-safe rename history
 crates/datefix-cli    Command-line tool built on the core
 src-tauri             Desktop app: Tauri 2 backend, Windows Mica/Acrylic glass effect
 ui                    The interface: HTML, CSS and JavaScript, no framework

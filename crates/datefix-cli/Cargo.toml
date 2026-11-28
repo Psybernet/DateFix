@@ -13,3 +13,4 @@ path = "src/main.rs"
 [dependencies]
 datefix-core = { path = "../datefix-core" }
 clap = { version = "4", features = ["derive"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

@@ -1,4 +1,5 @@
-//! Remembering the last batch of renames so it can be undone.
+//! The single-batch undo file used before 2.2 (`last-rename.json`). New
+//! history goes in [`crate::History`]; this is kept to read the old file.
 
 use crate::files::Outcome;
 use serde::{Deserialize, Serialize};

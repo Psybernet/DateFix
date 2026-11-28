@@ -94,8 +94,8 @@ fn plan_into(
     Ok(())
 }
 
-/// The first free name made by adding _2, _3… before the extension.
-pub fn next_free_name(path: &Path) -> PathBuf {
+/// `path` with `_n` added before the extension: `a.txt` becomes `a_2.txt`.
+pub(crate) fn numbered(path: &Path, n: u32) -> PathBuf {
     let stem = path
         .file_stem()
         .map(|s| s.to_string_lossy().into_owned())
@@ -104,10 +104,15 @@ pub fn next_free_name(path: &Path) -> PathBuf {
         .extension()
         .map(|e| format!(".{}", e.to_string_lossy()))
         .unwrap_or_default();
+    path.with_file_name(format!("{stem}_{n}{ext}"))
+}
+
+/// The first free name made by adding _2, _3… before the extension.
+pub fn next_free_name(path: &Path) -> PathBuf {
     let mut candidate = path.to_path_buf();
     let mut version = 2;
     while candidate.exists() {
-        candidate = path.with_file_name(format!("{stem}_{version}{ext}"));
+        candidate = numbered(path, version);
         version += 1;
     }
     candidate
