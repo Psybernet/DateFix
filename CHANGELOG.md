@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.2.0 (unreleased)
+## 2.2.0 (2026-11-28)
 
 Includes the date fixes planned for 2.1.2, which was never released.
 
